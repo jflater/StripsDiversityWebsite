@@ -3,9 +3,10 @@ output_dir: docs
 navbar:
   title: 'Strips soil bacteria analysis'
   left:
-  - text: Index
+  - text: Home
     href: index.html
-
+  - text: Alph Diversity
+    href: Diversity_Stats.html
     
 output:
   html_document:
