@@ -25,9 +25,12 @@ library(ggpubr)
 
 Alpha diversity is the description of the number of species and sometimes the counts within species at different sites. 
 
-Shannon diversity: 
-ACE diversity:
-Chao1:
+Shannon diversity:     
+
+ACE diversity:   
+
+Chao1:    
+
 
 ```{r Load STRIPS, echo=F}
 StripsPhy <- readRDS("data/merged_STRIPs.RDS")
@@ -35,11 +38,6 @@ StripsPhy <- readRDS("data/merged_STRIPs.RDS")
 StripsPhy <- StripsPhy %>%
   filter_taxa(function(x) sum(x) >= 1, T)
 
-StripsPhy
-
-min(taxa_sums(StripsPhy))
-
-head(StripsPhy@sam_data$matrix)
 ```
 
 # Chao1 and ACE    
