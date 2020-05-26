@@ -35,7 +35,7 @@ ttest
 ```
 
 ```{r Load STRIPS}
-StripsPhy <- readRDS("../Data/merged_STRIPs.RDS")
+StripsPhy <- readRDS("data/merged_STRIPs.RDS")
 
 StripsPhy <- StripsPhy %>%
   filter_taxa(function(x) sum(x) >= 1, T)
@@ -161,7 +161,7 @@ plot <- p + stat_compare_means(aes(group = soil_type), label = "p.signif") +
   ylab("ACE Diversity") +
   xlab("Sampling Day") + scale_fill_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
 plot
-ggsave("../Figures/WorleD1ACE.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
+ggsave("images/WorleD1ACE.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
 ```
 ```{r Chao1}
 library(ggpubr)
@@ -179,7 +179,7 @@ plot <- p + stat_compare_means(aes(group = soil_type), label = "p.signif") +
   ylab("Chao1 Diversity") +
   xlab("Sampling Day") + scale_fill_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
 plot
-ggsave("../Figures/WorleD1Chao1.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
+ggsave("images/WorleD1Chao1.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
 ```
 ```{r Shannon}
 library(ggpubr)
@@ -197,7 +197,7 @@ plot <- p + stat_compare_means(aes(group = soil_type), label = "p.signif") +
   ylab("Shannon Diversity") +
   xlab("Sampling Day") + scale_fill_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
 plot
-ggsave("../Figures/WorleD1Shannon.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
+ggsave("images/WorleD1Shannon.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
 ```
 ```{r}
 rWd1 <- rarefy_even_depth(Wd1, sample.size = 10000, rngseed = 12121212, trimOTUs = T)
@@ -220,7 +220,7 @@ plot <- p + stat_compare_means(aes(group = soil_type), label = "p.signif") +
   ylab("ACE Diversity") +
   xlab("Sampling Day") + scale_fill_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
 plot
-ggsave("../Figures/rWd1ACE.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
+ggsave("images/rWd1ACE.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
 ```
 
 ```{r Chao1 rarefied}
@@ -231,7 +231,7 @@ plot <- p + stat_compare_means(aes(group = soil_type), label = "p.signif") +
   ylab("Chao1 Diversity") +
   xlab("Sampling Day") + scale_fill_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
 plot
-ggsave("../Figures/rWd1Chao1.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
+ggsave("images/rWd1Chao1.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
 ```
 
 ```{r Shannon rarefied}
@@ -242,7 +242,7 @@ plot <- p + stat_compare_means(aes(group = soil_type), label = "p.signif") +
   ylab("Shannon Diversity") +
   xlab("Sampling Day") + scale_fill_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
 plot
-ggsave("../Figures/rWd1Shannon.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
+ggsave("images/rWd1Shannon.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
 ```
 
 Just prairie soils pairwise comparison
