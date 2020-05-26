@@ -412,66 +412,8 @@ StripsPhy</code></pre>
 ## refseq()      DNAStringSet:      [ 48381 reference sequences ]</code></pre>
 <pre class="r"><code>min(taxa_sums(StripsPhy))</code></pre>
 <pre><code>## [1] 1</code></pre>
-<pre class="r"><code>StripsPhy@sam_data$matrix</code></pre>
-<pre><code>##   [1] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-##  [11] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-##  [21] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-##  [31] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-##  [41] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-##  [51] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-##  [61] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-##  [71] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-##  [81] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-##  [91] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [101] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [111] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [121] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [131] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [141] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [151] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [161] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [171] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [181] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [191] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [201] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [211] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [221] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [231] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [241] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [251] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [261] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [271] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [281] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [291] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [301] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [311] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [321] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [331] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [341] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [351] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [361] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [371] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [381] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [391] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [401] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [411] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [421] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [431] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [441] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [451] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [461] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [471] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [481] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [491] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [501] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [511] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [521] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [531] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [541] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [551] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [561] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [571] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;
-## [581] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;</code></pre>
+<pre class="r"><code>head(StripsPhy@sam_data$matrix)</code></pre>
+<pre><code>## [1] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;</code></pre>
 <div id="chao1-and-ace" class="section level1">
 <h1>Chao1 and ACE</h1>
 <p>Both are nonparametric diversity estimates</p>
@@ -482,8 +424,9 @@ StripsPhy</code></pre>
 plot</code></pre>
 <p><img src="Diversity_Stats_files/figure-html/both%20depths-1.png" width="816" /></p>
 </div>
-<div id="compare-depth-1-worle-prairie-to-ag" class="section level1">
-<h1>Compare depth 1 WORLE prairie to ag</h1>
+<div id="depth-1-worle" class="section level1">
+<h1>Depth 1 WORLE</h1>
+<p>The first 7 cm of soil are depth one, we will compare these samples from prairie and ag portions of the plot</p>
 <pre class="r"><code>Wd1 &lt;- subset_samples(StripsPhy, experiment %in% &quot;Worle_Rainfall&quot; &amp; depth %in% 1 &amp; !soil_type %in% &quot;border&quot;) %&gt;%
   filter_taxa(function(x) sum(x) &gt;= 1, T)
 Wd1</code></pre>
@@ -492,6 +435,7 @@ Wd1</code></pre>
 ## sample_data() Sample Data:       [ 138 samples by 12 sample variables ]
 ## tax_table()   Taxonomy Table:    [ 15725 taxa by 6 taxonomic ranks ]
 ## refseq()      DNAStringSet:      [ 15725 reference sequences ]</code></pre>
+<p>Using phyloseq and it’s built in <code>plot_richness</code></p>
 <pre class="r"><code>plot &lt;- plot_richness(Wd1, x = &quot;soil_type&quot;, measures = c(&quot;Chao1&quot;, &quot;ACE&quot;)) +
   geom_boxplot()
 plot</code></pre>
@@ -559,7 +503,10 @@ my_plot &lt;- ggplot(sample_data, aes(x = sample_day, y = alpha)) +
   ggtitle(&quot;Alpha diversity&quot;) +
   ylab(&quot;Alpha diversity index&quot;)
 my_plot</code></pre>
-<p><img src="Diversity_Stats_files/figure-html/unnamed-chunk-2-1.png" width="816" /> # ggpubr makes stats</p>
+<p><img src="Diversity_Stats_files/figure-html/unnamed-chunk-2-1.png" width="816" /></p>
+</div>
+<div id="ggpubr-makes-stats-a-lot-easier" class="section level1">
+<h1>ggpubr makes stats a lot easier</h1>
 <pre class="r"><code>library(ggpubr)
 sample_data &lt;- sample_data(Wd1) %&gt;%
   lapply(., factor) %&gt;%
@@ -577,6 +524,7 @@ plot &lt;- p + stat_compare_means(aes(group = soil_type), label = &quot;p.signif
 plot</code></pre>
 <p><img src="Diversity_Stats_files/figure-html/ACE-1.png" width="816" /></p>
 <pre class="r"><code>ggsave(&quot;images/WorleD1ACE.png&quot;, plot = plot, device = &quot;png&quot;, width = 6, height = 4, units = &quot;in&quot;)</code></pre>
+<p>We see some differences on T002, which was two days after the rainfall simulation. The added moisture likely caused an increase in bacteria. Had we measured microbial biomass carbon, I would have expected to see an increase. We could confirm the increase by using 16s primers and qPCR for these samples.</p>
 <pre class="r"><code>library(ggpubr)
 sample_data &lt;- sample_data(Wd1) %&gt;%
   lapply(., factor) %&gt;%
@@ -624,6 +572,7 @@ plot</code></pre>
 ## present in any sample after random subsampling</code></pre>
 <pre><code>## ...</code></pre>
 <p>Rarefied Diversity</p>
+<p>Rarefaction is important for making sound judgements when comparing two sites (samples) in this case, our sequencing wasn’t even between all samples, so we are randomly re-sampling each at 10k reads. This removes a few samples that had less than 10k reads, we cannot include them in the comparison becuase the were undersampled. Yet, our conclusions remain the same (T002 differences).</p>
 <pre class="r"><code>library(ggpubr)
 sample_data &lt;- sample_data(rWd1) %&gt;%
   lapply(., factor) %&gt;%
@@ -665,7 +614,10 @@ plot &lt;- p + stat_compare_means(aes(group = soil_type), label = &quot;p.signif
 plot</code></pre>
 <p><img src="Diversity_Stats_files/figure-html/Shannon%20rarefied-1.png" width="816" /></p>
 <pre class="r"><code>ggsave(&quot;images/rWd1Shannon.png&quot;, plot = plot, device = &quot;png&quot;, width = 6, height = 4, units = &quot;in&quot;)</code></pre>
-<p>Just prairie soils pairwise comparison</p>
+</div>
+<div id="prairie-pairwise" class="section level1">
+<h1>Prairie Pairwise</h1>
+<p>Just prairie soils pairwise comparison, we can see if any of the days were signigicantly more or less diverse than the other. The lines on the graph conncet the two samples that are being compared.</p>
 <pre class="r"><code>levels(as.factor(sample_data$sample_day))</code></pre>
 <pre><code>## [1] &quot;Baseline&quot; &quot;T000&quot;     &quot;T002&quot;     &quot;T014&quot;     &quot;T021&quot;     &quot;T042&quot;</code></pre>
 <pre class="r"><code>levels(as.factor(p$sample_day))</code></pre>
@@ -700,6 +652,7 @@ plot &lt;- p + stat_compare_means(comparisons = my_comparisons, label = &quot;p.
   xlab(&quot;Sampling Day&quot;) 
 plot</code></pre>
 <p><img src="Diversity_Stats_files/figure-html/unnamed-chunk-5-2.png" width="816" /></p>
+<p>Trying a violin plot</p>
 <pre class="r"><code>p &lt;- sample_data %&gt;%
   filter(soil_type == &quot;crop&quot;) %&gt;%
   ggviolin(x = &quot;sample_day&quot;, y = &quot;ACE&quot;, fill = &quot;sample_day&quot;,

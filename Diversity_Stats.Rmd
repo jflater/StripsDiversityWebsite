@@ -44,10 +44,13 @@ StripsPhy
 
 min(taxa_sums(StripsPhy))
 
-StripsPhy@sam_data$matrix
+head(StripsPhy@sam_data$matrix)
 ```
+
 # Chao1 and ACE    
+
 Both are nonparametric diversity estimates
+
 ```{r both depths}
 plot <- plot_richness(StripsPhy, x = "soil_type", measures = c("Chao1", "ACE")) +
   geom_boxplot() +
@@ -56,12 +59,18 @@ plot <- plot_richness(StripsPhy, x = "soil_type", measures = c("Chao1", "ACE")) 
 plot
 ```
 
-# Compare depth 1 WORLE prairie to ag
+# Depth 1 WORLE
+
+The first 7 cm of soil are depth one, we will compare these samples from prairie and ag portions of the plot
+
 ```{r depth 1 subset}
 Wd1 <- subset_samples(StripsPhy, experiment %in% "Worle_Rainfall" & depth %in% 1 & !soil_type %in% "border") %>%
   filter_taxa(function(x) sum(x) >= 1, T)
 Wd1
 ```
+
+Using phyloseq and it's built in `plot_richness`
+
 ```{r phylsoeq plot richness}
 plot <- plot_richness(Wd1, x = "soil_type", measures = c("Chao1", "ACE")) +
   geom_boxplot()
@@ -144,7 +153,9 @@ my_plot <- ggplot(sample_data, aes(x = sample_day, y = alpha)) +
   ylab("Alpha diversity index")
 my_plot
 ```
-# ggpubr makes stats 
+
+# ggpubr makes stats a lot easier
+
 ```{r ACE}
 library(ggpubr)
 sample_data <- sample_data(Wd1) %>%
@@ -163,6 +174,9 @@ plot <- p + stat_compare_means(aes(group = soil_type), label = "p.signif") +
 plot
 ggsave("images/WorleD1ACE.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
 ```
+
+We see some differences on T002, which was two days after the rainfall simulation. The added moisture likely caused an increase in bacteria. Had we measured microbial biomass carbon, I would have expected to see an increase. We could confirm the increase by using 16s primers and qPCR for these samples. 
+
 ```{r Chao1}
 library(ggpubr)
 sample_data <- sample_data(Wd1) %>%
@@ -202,7 +216,11 @@ ggsave("images/WorleD1Shannon.png", plot = plot, device = "png", width = 6, heig
 ```{r}
 rWd1 <- rarefy_even_depth(Wd1, sample.size = 10000, rngseed = 12121212, trimOTUs = T)
 ```
+
 Rarefied Diversity
+
+Rarefaction is important for making sound judgements when comparing two sites (samples) in this case, our sequencing wasn't even between all samples, so we are randomly re-sampling each at 10k reads. This removes a few samples that had less than 10k reads, we cannot include them in the comparison becuase the were undersampled. Yet, our conclusions remain the same (T002 differences).
+
 ```{r Rare Richness}
 library(ggpubr)
 sample_data <- sample_data(rWd1) %>%
@@ -245,7 +263,10 @@ plot
 ggsave("images/rWd1Shannon.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
 ```
 
-Just prairie soils pairwise comparison
+# Prairie Pairwise
+
+Just prairie soils pairwise comparison, we can see if any of the days were signigicantly more or less diverse than the other. The lines on the graph conncet the two samples that are being compared. 
+
 ```{r}
 levels(as.factor(sample_data$sample_day))
 levels(as.factor(p$sample_day))
@@ -276,6 +297,9 @@ plot <- p + stat_compare_means(comparisons = my_comparisons, label = "p.signif")
   xlab("Sampling Day") 
 plot
 ```
+
+Trying a violin plot
+
 ```{r}
 p <- sample_data %>%
   filter(soil_type == "crop") %>%
