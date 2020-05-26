@@ -381,38 +381,14 @@ div.tocify {
 </div>
 
 
-<pre class="r"><code>data(&quot;soilrep&quot;)
-soilrep</code></pre>
-<pre><code>## phyloseq-class experiment-level object
-## otu_table()   OTU Table:         [ 16825 taxa and 56 samples ]
-## sample_data() Sample Data:       [ 56 samples by 4 sample variables ]</code></pre>
-<pre class="r"><code>erich &lt;- estimate_richness(soilrep, measures = c(&quot;Observed&quot;, &quot;Shannon&quot;, &quot;Simpson&quot;, &quot;Fisher&quot;))
-ttest &lt;- t(sapply(erich, function(x) unlist(t.test(x~sample_data(soilrep)$warmed)[c(&quot;estimate&quot;,&quot;p.value&quot;,&quot;statistic&quot;,&quot;conf.int&quot;)])))
-ttest</code></pre>
-<pre><code>##          estimate.mean in group no estimate.mean in group yes   p.value
-## Observed              1133.1428571                1109.392857 0.8222405
-## Shannon                  6.7239381                   6.725982 0.9776912
-## Simpson                  0.9980636                   0.998125 0.6300884
-## Fisher                1400.0104151                1422.904606 0.7783465
-##          statistic.t     conf.int1    conf.int2
-## Observed  0.22579676 -1.872919e+02 2.347919e+02
-## Shannon  -0.02809354 -1.479344e-01 1.438458e-01
-## Simpson  -0.48438244 -3.156804e-04 1.928421e-04
-## Fisher   -0.28289961 -1.851811e+02 1.393927e+02</code></pre>
-<pre class="r"><code>StripsPhy &lt;- readRDS(&quot;data/merged_STRIPs.RDS&quot;)
-
-StripsPhy &lt;- StripsPhy %&gt;%
-  filter_taxa(function(x) sum(x) &gt;= 1, T)
-
-StripsPhy</code></pre>
+<p>Alpha diversity is the description of the number of species and sometimes the counts within species at different sites.</p>
+<p>Shannon diversity: ACE diversity: Chao1:</p>
 <pre><code>## phyloseq-class experiment-level object
 ## otu_table()   OTU Table:         [ 48381 taxa and 586 samples ]
 ## sample_data() Sample Data:       [ 586 samples by 12 sample variables ]
 ## tax_table()   Taxonomy Table:    [ 48381 taxa by 6 taxonomic ranks ]
 ## refseq()      DNAStringSet:      [ 48381 reference sequences ]</code></pre>
-<pre class="r"><code>min(taxa_sums(StripsPhy))</code></pre>
 <pre><code>## [1] 1</code></pre>
-<pre class="r"><code>head(StripsPhy@sam_data$matrix)</code></pre>
 <pre><code>## [1] &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot; &quot;soil&quot;</code></pre>
 <div id="chao1-and-ace" class="section level1">
 <h1>Chao1 and ACE</h1>
@@ -457,8 +433,6 @@ ttest</code></pre>
 ## se.chao1 0.94386121  -0.0705492 -5.264651e-04 0.000490199
 ## ACE      0.05784510  -1.9150050 -1.958624e+02 3.253609303
 ## se.ACE   0.12729459  -1.5346724 -1.265635e+00 0.159853277</code></pre>
-<p><code>r  # compare_alpha &lt;- function(var1, physeq) {  #   # Calcuate alpha diversity  #   sample_data &lt;- sample_data(physeq) %&gt;%  #   as_tibble()  #   sample_data$alpha &lt;- estimate_richness(physeq, measures = c(&quot;ACE&quot;)) %&gt;%   #     select(ACE) %&gt;%  #     unlist()  #   # Do ANOVA  #   sample_data$grouping &lt;- sample_data[[grouping_var]] # needed for how `aov` works  #   anova_result &lt;- aov(alpha ~ grouping, sample_data)  #   # Do Tukey's HSD test  #   tukey_result &lt;- HSD.test(anova_result, &quot;grouping&quot;, group = TRUE)  #   # Plot result  #   group_data &lt;- tukey_result$groups[order(rownames(tukey_result$groups)),]  #   my_plot &lt;- ggplot(sample_data, aes(x = grouping, y = alpha)) +  #     geom_text(data = data.frame(),  #               aes(x = rownames(group_data),  #                   y = max(sample_data$alpha) + 1,  #                   label = group_data$groups),  #               col = 'black',  #               size = 10) +  #     geom_boxplot() +  #     ggtitle(&quot;Alpha diversity&quot;) +  #     xlab(grouping) +  #     ylab(&quot;Alpha diversity index&quot;)  #   # Return plot  #   return(my_plot)  # }  #</code></p>
-<p><code>r  # compare_alpha(&quot;sample_day&quot;, Wd1)</code></p>
 <pre class="r"><code>physeq &lt;- Wd1
 
 c1 &lt;- c(&quot;soil_type&quot;)
@@ -503,10 +477,11 @@ my_plot &lt;- ggplot(sample_data, aes(x = sample_day, y = alpha)) +
   ggtitle(&quot;Alpha diversity&quot;) +
   ylab(&quot;Alpha diversity index&quot;)
 my_plot</code></pre>
-<p><img src="Diversity_Stats_files/figure-html/unnamed-chunk-2-1.png" width="816" /></p>
+<p><img src="Diversity_Stats_files/figure-html/unnamed-chunk-1-1.png" width="816" /></p>
 </div>
-<div id="ggpubr-makes-stats-a-lot-easier" class="section level1">
-<h1>ggpubr makes stats a lot easier</h1>
+<div id="ggpubr" class="section level1">
+<h1>ggpubr</h1>
+<p>ggpubr makes stats a lot easier</p>
 <pre class="r"><code>library(ggpubr)
 sample_data &lt;- sample_data(Wd1) %&gt;%
   lapply(., factor) %&gt;%
@@ -572,7 +547,7 @@ plot</code></pre>
 ## present in any sample after random subsampling</code></pre>
 <pre><code>## ...</code></pre>
 <p>Rarefied Diversity</p>
-<p>Rarefaction is important for making sound judgements when comparing two sites (samples) in this case, our sequencing wasn’t even between all samples, so we are randomly re-sampling each at 10k reads. This removes a few samples that had less than 10k reads, we cannot include them in the comparison becuase the were undersampled. Yet, our conclusions remain the same (T002 differences).</p>
+<p>Rarefaction is important for making sound judgements when comparing two sites (samples) in this case, our sequencing wasn’t even between all samples, so we are randomly re-sampling each at 10k reads. This removes a few samples that had less than 10k reads, we cannot include them in the comparison becuase the were undersampled. Yet, our conclusions remain the same (T002 differences), with the exception of an additional difference detected on day 21 for ACE and Chao1.</p>
 <pre class="r"><code>library(ggpubr)
 sample_data &lt;- sample_data(rWd1) %&gt;%
   lapply(., factor) %&gt;%
@@ -626,7 +601,7 @@ plot</code></pre>
   filter(soil_type == &quot;strip&quot;) %&gt;%
   ggboxplot(x = &quot;sample_day&quot;, y = &quot;Shannon&quot;, add = &quot;jitter&quot;)
 p</code></pre>
-<p><img src="Diversity_Stats_files/figure-html/unnamed-chunk-4-1.png" width="816" /></p>
+<p><img src="Diversity_Stats_files/figure-html/unnamed-chunk-3-1.png" width="816" /></p>
 <pre class="r"><code>my_comparisons &lt;- list( c(&quot;T002&quot;, &quot;T014&quot;), c(&quot;T002&quot;, &quot;T000&quot;), c(&quot;Baseline&quot;, &quot;T000&quot;), c(&quot;T014&quot;, &quot;T021&quot;), c(&quot;T021&quot;, &quot;T042&quot;))
 
 plot &lt;- p + stat_compare_means(comparisons = my_comparisons, label = &quot;p.signif&quot;) +
@@ -634,7 +609,7 @@ plot &lt;- p + stat_compare_means(comparisons = my_comparisons, label = &quot;p.
   ylab(&quot;Shannon Diversity&quot;) +
   xlab(&quot;Sampling Day&quot;) 
 plot</code></pre>
-<p><img src="Diversity_Stats_files/figure-html/unnamed-chunk-4-2.png" width="816" /></p>
+<p><img src="Diversity_Stats_files/figure-html/unnamed-chunk-3-2.png" width="816" /></p>
 <pre class="r"><code>levels(as.factor(sample_data$sample_day))</code></pre>
 <pre><code>## [1] &quot;Baseline&quot; &quot;T000&quot;     &quot;T002&quot;     &quot;T014&quot;     &quot;T021&quot;     &quot;T042&quot;</code></pre>
 <pre class="r"><code>levels(as.factor(p$sample_day))</code></pre>
@@ -643,7 +618,7 @@ plot</code></pre>
   filter(soil_type == &quot;strip&quot;) %&gt;%
   ggboxplot(x = &quot;sample_day&quot;, y = &quot;ACE&quot;, add = &quot;jitter&quot;)
 p</code></pre>
-<p><img src="Diversity_Stats_files/figure-html/unnamed-chunk-5-1.png" width="816" /></p>
+<p><img src="Diversity_Stats_files/figure-html/unnamed-chunk-4-1.png" width="816" /></p>
 <pre class="r"><code>my_comparisons &lt;- list( c(&quot;T002&quot;, &quot;T014&quot;), c(&quot;T002&quot;, &quot;T000&quot;), c(&quot;Baseline&quot;, &quot;T000&quot;), c(&quot;T014&quot;, &quot;T021&quot;), c(&quot;T021&quot;, &quot;T042&quot;))
 
 plot &lt;- p + stat_compare_means(comparisons = my_comparisons, label = &quot;p.signif&quot;) +
@@ -651,14 +626,14 @@ plot &lt;- p + stat_compare_means(comparisons = my_comparisons, label = &quot;p.
   ylab(&quot;ACE Diversity&quot;) +
   xlab(&quot;Sampling Day&quot;) 
 plot</code></pre>
-<p><img src="Diversity_Stats_files/figure-html/unnamed-chunk-5-2.png" width="816" /></p>
+<p><img src="Diversity_Stats_files/figure-html/unnamed-chunk-4-2.png" width="816" /></p>
 <p>Trying a violin plot</p>
 <pre class="r"><code>p &lt;- sample_data %&gt;%
   filter(soil_type == &quot;crop&quot;) %&gt;%
   ggviolin(x = &quot;sample_day&quot;, y = &quot;ACE&quot;, fill = &quot;sample_day&quot;,
          add = &quot;boxplot&quot;, add.params = list(fill = &quot;gray&quot;))
 p</code></pre>
-<p><img src="Diversity_Stats_files/figure-html/unnamed-chunk-6-1.png" width="816" /></p>
+<p><img src="Diversity_Stats_files/figure-html/unnamed-chunk-5-1.png" width="816" /></p>
 <pre class="r"><code>my_comparisons &lt;- list( c(&quot;T002&quot;, &quot;T014&quot;), c(&quot;T002&quot;, &quot;T000&quot;), c(&quot;Baseline&quot;, &quot;T000&quot;), c(&quot;T014&quot;, &quot;T021&quot;), c(&quot;T021&quot;, &quot;T042&quot;))
 
 plot &lt;- p + stat_compare_means(comparisons = my_comparisons, label = &quot;p.signif&quot;) +
@@ -668,7 +643,7 @@ plot &lt;- p + stat_compare_means(comparisons = my_comparisons, label = &quot;p.
   scale_fill_viridis_d() + 
   theme(legend.position = &quot;none&quot;) 
 plot</code></pre>
-<p><img src="Diversity_Stats_files/figure-html/unnamed-chunk-6-2.png" width="816" /></p>
+<p><img src="Diversity_Stats_files/figure-html/unnamed-chunk-5-2.png" width="816" /></p>
 </div>
 
 

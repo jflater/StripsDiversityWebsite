@@ -23,18 +23,13 @@ library(agricolae)
 library(ggpubr)
 ```
 
-```{r Sample Stats}
-data("soilrep")
-soilrep
-```
+Alpha diversity is the description of the number of species and sometimes the counts within species at different sites. 
 
-```{r Sample stats p value}
-erich <- estimate_richness(soilrep, measures = c("Observed", "Shannon", "Simpson", "Fisher"))
-ttest <- t(sapply(erich, function(x) unlist(t.test(x~sample_data(soilrep)$warmed)[c("estimate","p.value","statistic","conf.int")])))
-ttest
-```
+Shannon diversity: 
+ACE diversity:
+Chao1:
 
-```{r Load STRIPS}
+```{r Load STRIPS, echo=F}
 StripsPhy <- readRDS("data/merged_STRIPs.RDS")
 
 StripsPhy <- StripsPhy %>%
@@ -84,41 +79,6 @@ Wd1.Richness <- estimate_richness(Wd1, measures = c("Chao1", "ACE"))
 ttest <- t(sapply(Wd1.Richness, function(x) unlist(t.test(x~sample_data(Wd1)$soil_type)[c("estimate","p.value","statistic","conf.int")])))
 ttest
 ```
- ```{r test function to compare diversity}
-# compare_alpha <- function(var1, physeq) {
-#   # Calcuate alpha diversity
-#   sample_data <- sample_data(physeq) %>%
-#   as_tibble()
-#   sample_data$alpha <- estimate_richness(physeq, measures = c("ACE")) %>% 
-#     select(ACE) %>%
-#     unlist()
-#   # Do ANOVA
-#   sample_data$grouping <- sample_data[[grouping_var]] # needed for how `aov` works
-#   anova_result <- aov(alpha ~ grouping, sample_data)
-#   # Do Tukey's HSD test
-#   tukey_result <- HSD.test(anova_result, "grouping", group = TRUE)
-#   # Plot result
-#   group_data <- tukey_result$groups[order(rownames(tukey_result$groups)),]
-#   my_plot <- ggplot(sample_data, aes(x = grouping, y = alpha)) +
-#     geom_text(data = data.frame(),
-#               aes(x = rownames(group_data),
-#                   y = max(sample_data$alpha) + 1,
-#                   label = group_data$groups),
-#               col = 'black',
-#               size = 10) +
-#     geom_boxplot() +
-#     ggtitle("Alpha diversity") +
-#     xlab(grouping) +
-#     ylab("Alpha diversity index")
-#   # Return plot
-#   return(my_plot)
-# }
-# 
- ```
-
- ```{r}
-# compare_alpha("sample_day", Wd1) 
- ```
 
 ```{r}
 physeq <- Wd1
@@ -154,7 +114,9 @@ my_plot <- ggplot(sample_data, aes(x = sample_day, y = alpha)) +
 my_plot
 ```
 
-# ggpubr makes stats a lot easier
+# ggpubr 
+
+ggpubr makes stats a lot easier
 
 ```{r ACE}
 library(ggpubr)
@@ -219,7 +181,7 @@ rWd1 <- rarefy_even_depth(Wd1, sample.size = 10000, rngseed = 12121212, trimOTUs
 
 Rarefied Diversity
 
-Rarefaction is important for making sound judgements when comparing two sites (samples) in this case, our sequencing wasn't even between all samples, so we are randomly re-sampling each at 10k reads. This removes a few samples that had less than 10k reads, we cannot include them in the comparison becuase the were undersampled. Yet, our conclusions remain the same (T002 differences).
+Rarefaction is important for making sound judgements when comparing two sites (samples) in this case, our sequencing wasn't even between all samples, so we are randomly re-sampling each at 10k reads. This removes a few samples that had less than 10k reads, we cannot include them in the comparison becuase the were undersampled. Yet, our conclusions remain the same (T002 differences), with the exception of an additional difference detected on day 21 for ACE and Chao1.
 
 ```{r Rare Richness}
 library(ggpubr)
