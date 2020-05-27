@@ -37,7 +37,6 @@ StripsPhy <- readRDS("data/merged_STRIPs.RDS")
 
 StripsPhy <- StripsPhy %>%
   filter_taxa(function(x) sum(x) >= 1, T)
-
 ```
 
 # Chao1 and ACE    
