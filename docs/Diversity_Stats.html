@@ -395,8 +395,8 @@ div.tocify {
 plot</code></pre>
 <p><img src="Diversity_Stats_files/figure-html/both%20depths-1.png" width="816" /></p>
 </div>
-<div id="depth-1-worle" class="section level1">
-<h1>Depth 1 WORLE</h1>
+<div id="depth-1" class="section level1">
+<h1>Depth 1</h1>
 <p>The first 7 cm of soil are depth one, we will compare these samples from prairie and ag portions of the plot</p>
 <pre class="r"><code>Wd1 &lt;- subset_samples(StripsPhy, experiment %in% &quot;Worle_Rainfall&quot; &amp; depth %in% 1 &amp; !soil_type %in% &quot;border&quot;) %&gt;%
   filter_taxa(function(x) sum(x) &gt;= 1, T)
@@ -639,6 +639,78 @@ plot &lt;- p + stat_compare_means(comparisons = my_comparisons, label = &quot;p.
   theme(legend.position = &quot;none&quot;) 
 plot</code></pre>
 <p><img src="Diversity_Stats_files/figure-html/unnamed-chunk-5-2.png" width="816" /></p>
+</div>
+<div id="depth-2" class="section level1">
+<h1>Depth 2</h1>
+<p>What about the second depth of the soil samples, 7-15 cm?</p>
+<pre class="r"><code>Wd2 &lt;- subset_samples(StripsPhy, experiment %in% &quot;Worle_Rainfall&quot; &amp; depth %in% 2 &amp; !soil_type %in% &quot;border&quot;) %&gt;%
+  filter_taxa(function(x) sum(x) &gt;= 1, T)
+Wd2</code></pre>
+<pre><code>## phyloseq-class experiment-level object
+## otu_table()   OTU Table:         [ 12880 taxa and 144 samples ]
+## sample_data() Sample Data:       [ 144 samples by 12 sample variables ]
+## tax_table()   Taxonomy Table:    [ 12880 taxa by 6 taxonomic ranks ]
+## refseq()      DNAStringSet:      [ 12880 reference sequences ]</code></pre>
+<pre class="r"><code>sample_data &lt;- sample_data(Wd2) %&gt;%
+  lapply(., factor) %&gt;%
+  as_tibble() 
+  
+richness &lt;- estimate_richness(Wd2) 
+sample_data &lt;- cbind(sample_data, richness)
+
+p &lt;- ggboxplot(sample_data, x = &quot;sample_day&quot;, y = &quot;ACE&quot;, fill = &quot;soil_type&quot;, add = &quot;jitter&quot;)
+
+plot &lt;- p + stat_compare_means(aes(group = soil_type), label = &quot;p.signif&quot;) +
+  ggtitle(&quot;ACE diversity index of WORLE detph 2 soils&quot;) +
+  ylab(&quot;ACE Diversity&quot;) +
+  xlab(&quot;Sampling Day&quot;) + scale_fill_viridis_d(name = &quot;Managment&quot;, labels = c(&quot;Ag&quot;, &quot;Prairie&quot;))
+plot</code></pre>
+<p><img src="Diversity_Stats_files/figure-html/ACE%202-1.png" width="816" /></p>
+<pre class="r"><code>ggsave(&quot;images/WorleD2ACE.png&quot;, plot = plot, device = &quot;png&quot;, width = 6, height = 4, units = &quot;in&quot;)</code></pre>
+<pre class="r"><code>sample_data &lt;- sample_data(Wd2) %&gt;%
+  lapply(., factor) %&gt;%
+  as_tibble() 
+  
+richness &lt;- estimate_richness(Wd2) 
+sample_data &lt;- cbind(sample_data, richness)
+
+p &lt;- ggboxplot(sample_data, x = &quot;sample_day&quot;, y = &quot;Shannon&quot;, fill = &quot;soil_type&quot;, add = &quot;jitter&quot;)
+
+plot &lt;- p + stat_compare_means(aes(group = soil_type), label = &quot;p.signif&quot;) +
+  ggtitle(&quot;Shannon diversity index of WORLE detph 2 soils&quot;) +
+  ylab(&quot;Shannon Diversity&quot;) +
+  xlab(&quot;Sampling Day&quot;) + scale_fill_viridis_d(name = &quot;Managment&quot;, labels = c(&quot;Ag&quot;, &quot;Prairie&quot;))
+plot</code></pre>
+<p><img src="Diversity_Stats_files/figure-html/Shannon%202-1.png" width="816" /></p>
+<pre class="r"><code>ggsave(&quot;images/WorleD2Shannon.png&quot;, plot = plot, device = &quot;png&quot;, width = 6, height = 4, units = &quot;in&quot;)</code></pre>
+<pre class="r"><code>rWd2 &lt;- rarefy_even_depth(Wd2, sample.size = 10000, rngseed = 12121212, trimOTUs = T)</code></pre>
+<pre><code>## `set.seed(12121212)` was used to initialize repeatable random subsampling.</code></pre>
+<pre><code>## Please record this for your records so others can reproduce.</code></pre>
+<pre><code>## Try `set.seed(12121212); .Random.seed` for the full vector</code></pre>
+<pre><code>## ...</code></pre>
+<pre><code>## 12 samples removedbecause they contained fewer reads than `sample.size`.</code></pre>
+<pre><code>## Up to first five removed samples are:</code></pre>
+<pre><code>## P1-s4-d2-bP1-s4-d2-t14P1-s6-d2-bP1-s6-d2-t2P2-s2-d2-t0</code></pre>
+<pre><code>## ...</code></pre>
+<pre><code>## 1243OTUs were removed because they are no longer 
+## present in any sample after random subsampling</code></pre>
+<pre><code>## ...</code></pre>
+<pre class="r"><code>sample_data &lt;- sample_data(rWd2) %&gt;%
+  lapply(., factor) %&gt;%
+  as_tibble() 
+  
+richness &lt;- estimate_richness(rWd2) 
+sample_data &lt;- cbind(sample_data, richness)
+
+p &lt;- ggboxplot(sample_data, x = &quot;sample_day&quot;, y = &quot;Shannon&quot;, fill = &quot;soil_type&quot;, add = &quot;jitter&quot;)
+
+plot &lt;- p + stat_compare_means(aes(group = soil_type), label = &quot;p.signif&quot;) +
+  ggtitle(&quot;Shannon diversity index of WORLE detph 2 soils rarefied to 10k reads&quot;) +
+  ylab(&quot;Shannon Diversity&quot;) +
+  xlab(&quot;Sampling Day&quot;) + scale_fill_viridis_d(name = &quot;Managment&quot;, labels = c(&quot;Ag&quot;, &quot;Prairie&quot;))
+plot</code></pre>
+<p><img src="Diversity_Stats_files/figure-html/Shannon%20rare%202-1.png" width="816" /></p>
+<pre class="r"><code>ggsave(&quot;images/WorlerD2Shannon.png&quot;, plot = plot, device = &quot;png&quot;, width = 6, height = 4, units = &quot;in&quot;)</code></pre>
 </div>
 
 

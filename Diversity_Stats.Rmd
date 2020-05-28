@@ -51,7 +51,7 @@ plot <- plot_richness(StripsPhy, x = "soil_type", measures = c("Chao1", "ACE")) 
 plot
 ```
 
-# Depth 1 WORLE
+# Depth 1 
 
 The first 7 cm of soil are depth one, we will compare these samples from prairie and ag portions of the plot
 
@@ -222,7 +222,7 @@ plot
 ggsave("images/rWd1Shannon.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
 ```
 
-# Prairie Pairwise
+# Prairie and Crop Pairwise
 
 Just prairie soils pairwise comparison, we can see if any of the days were signigicantly more or less diverse than the other. The lines on the graph conncet the two samples that are being compared. 
 
@@ -232,14 +232,25 @@ levels(as.factor(p$sample_day))
 p <- sample_data %>%
   filter(soil_type == "strip") %>%
   ggboxplot(x = "sample_day", y = "Shannon", add = "jitter")
+
+my_comparisons <- list( c("T002", "T014"), c("T002", "T000"), c("Baseline", "T000"), c("T014", "T021"), c("T021", "T042"))
+
+plot <- p + stat_compare_means(comparisons = my_comparisons, label = "p.signif") +
+  ggtitle("Shannon diversity index of WORLE detph 1 Crop soils, rarefied to 10k") +
+  ylab("Shannon Diversity") +
+  xlab("Sampling Day") 
+
+p <- sample_data %>%
+  filter(soil_type == "crop") %>%
+  ggboxplot(x = "sample_day", y = "Shannon", add = "jitter")
 p
 my_comparisons <- list( c("T002", "T014"), c("T002", "T000"), c("Baseline", "T000"), c("T014", "T021"), c("T021", "T042"))
 
 plot <- p + stat_compare_means(comparisons = my_comparisons, label = "p.signif") +
-  ggtitle("Shannon diversity index of WORLE detph 1 Prairie soils, rarefied to 10k") +
+  ggtitle("Shannon diversity index of WORLE detph 1 Crop soils, rarefied to 10k") +
   ylab("Shannon Diversity") +
   xlab("Sampling Day") 
-plot
+plotlot
 ```
 ```{r}
 levels(as.factor(sample_data$sample_day))
@@ -276,3 +287,99 @@ plot <- p + stat_compare_means(comparisons = my_comparisons, label = "p.signif")
 plot
 ```
 
+
+# Depth 2 
+
+What about the second depth of the soil samples, 7-15 cm? 
+
+```{r depth 2 subset}
+Wd2 <- subset_samples(StripsPhy, experiment %in% "Worle_Rainfall" & depth %in% 2 & !soil_type %in% "border") %>%
+  filter_taxa(function(x) sum(x) >= 1, T)
+Wd2
+```
+```{r ACE 2}
+sample_data <- sample_data(Wd2) %>%
+  lapply(., factor) %>%
+  as_tibble() 
+  
+richness <- estimate_richness(Wd2) 
+sample_data <- cbind(sample_data, richness)
+
+p <- ggboxplot(sample_data, x = "sample_day", y = "ACE", fill = "soil_type", add = "jitter")
+
+plot <- p + stat_compare_means(aes(group = soil_type), label = "p.signif") +
+  ggtitle("ACE diversity index of WORLE detph 2 soils") +
+  ylab("ACE Diversity") +
+  xlab("Sampling Day") + scale_fill_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
+plot
+ggsave("images/WorleD2ACE.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
+```
+
+```{r Shannon 2}
+sample_data <- sample_data(Wd2) %>%
+  lapply(., factor) %>%
+  as_tibble() 
+  
+richness <- estimate_richness(Wd2) 
+sample_data <- cbind(sample_data, richness)
+
+p <- ggboxplot(sample_data, x = "sample_day", y = "Shannon", fill = "soil_type", add = "jitter")
+
+plot <- p + stat_compare_means(aes(group = soil_type), label = "p.signif") +
+  ggtitle("Shannon diversity index of WORLE detph 2 soils") +
+  ylab("Shannon Diversity") +
+  xlab("Sampling Day") + scale_fill_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
+plot
+ggsave("images/WorleD2Shannon.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
+```
+
+```{r}
+rWd2 <- rarefy_even_depth(Wd2, sample.size = 10000, rngseed = 12121212, trimOTUs = T)
+```
+
+```{r Shannon rare 2}
+sample_data2 <- sample_data(rWd2) %>%
+  lapply(., factor) %>%
+  as_tibble() 
+  
+richness <- estimate_richness(rWd2) 
+sample_data2 <- cbind(sample_data2, richness)
+
+p <- ggboxplot(sample_data2, x = "sample_day", y = "Shannon", fill = "soil_type", add = "jitter")
+
+plot <- p + stat_compare_means(aes(group = soil_type), label = "p.signif") +
+  ggtitle("Shannon diversity index of WORLE detph 2 soils rarefied to 10k reads") +
+  ylab("Shannon Diversity") +
+  xlab("Sampling Day") + scale_fill_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
+plot
+ggsave("images/WorlerD2Shannon.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
+```
+
+
+```{r}
+# sample data 2 is rarefied, this is shannon
+p <- sample_data2 %>%
+  filter(soil_type == "strip") %>%
+  ggboxplot(x = "sample_day", y = "Shannon", add = "jitter")
+
+my_comparisons <- list( c("T002", "T014"), c("T002", "T000"), c("Baseline", "T000"), c("T014", "T021"), c("T021", "T042"))
+
+plot <- p + stat_compare_means(comparisons = my_comparisons, label = "p.signif") +
+  ggtitle("Shannon diversity index of WORLE detph 2 Prairie soils, rarefied to 10k") +
+  ylab("Shannon Diversity") +
+  xlab("Sampling Day") 
+plot
+```
+```{r}
+p <- sample_data %>%
+  filter(soil_type == "strip") %>%
+  ggboxplot(x = "sample_day", y = "ACE", add = "jitter")
+
+my_comparisons <- list( c("T002", "T014"), c("T002", "T000"), c("Baseline", "T000"), c("T014", "T021"), c("T021", "T042"))
+
+plot <- p + stat_compare_means(comparisons = my_comparisons, label = "p.signif") +
+  ggtitle("ACE diversity index of WORLE depth 2 Prairie soils") +
+  ylab("ACE Diversity") +
+  xlab("Sampling Day") 
+plot
+```
