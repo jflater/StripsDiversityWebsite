@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
 
 <head>
 
 <meta charset="utf-8" />
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="generator" content="pandoc" />
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
@@ -239,6 +238,7 @@ $(document).ready(function () {
   border: none;
   display: inline-block;
   border-radius: 4px;
+  background-color: transparent;
 }
 
 .tabset-dropdown > .nav-tabs.nav-tabs-open > li {
@@ -270,6 +270,12 @@ $(document).ready(function () {
 }
 }
 
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
 
 .toc-content {
   padding-left: 30px;
@@ -354,6 +360,9 @@ div.tocify {
 <li>
   <a href="Diversity_Stats.html">Alph Diversity</a>
 </li>
+<li>
+  <a href="core_taxa.html">Core Taxa</a>
+</li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
         
@@ -435,9 +444,9 @@ c2 &lt;- c(&quot;sample_day&quot;)
 
 sample_data &lt;- sample_data(physeq) %&gt;%
 as_tibble()</code></pre>
-<pre><code>## Warning in class(x) &lt;- c(subclass, tibble_class): Setting class(x) to
-## multiple strings (&quot;tbl_df&quot;, &quot;tbl&quot;, ...); result will no longer be an S4
-## object</code></pre>
+<pre><code>## Warning in class(x) &lt;- c(setdiff(subclass, tibble_class), tibble_class):
+## Setting class(x) to multiple strings (&quot;tbl_df&quot;, &quot;tbl&quot;, ...); result will
+## no longer be an S4 object</code></pre>
 <pre class="r"><code>sample_data$alpha &lt;- estimate_richness(physeq, measures = c(&quot;ACE&quot;)) %&gt;% 
   select(ACE) %&gt;%
   unlist()
@@ -585,8 +594,8 @@ plot</code></pre>
 <p><img src="Diversity_Stats_files/figure-html/Shannon%20rarefied-1.png" width="816" /></p>
 <pre class="r"><code>ggsave(&quot;images/rWd1Shannon.png&quot;, plot = plot, device = &quot;png&quot;, width = 6, height = 4, units = &quot;in&quot;)</code></pre>
 </div>
-<div id="prairie-pairwise" class="section level1">
-<h1>Prairie Pairwise</h1>
+<div id="prairie-and-crop-pairwise" class="section level1">
+<h1>Prairie and Crop Pairwise</h1>
 <p>Just prairie soils pairwise comparison, we can see if any of the days were signigicantly more or less diverse than the other. The lines on the graph conncet the two samples that are being compared.</p>
 <pre class="r"><code>levels(as.factor(sample_data$sample_day))</code></pre>
 <pre><code>## [1] &quot;Baseline&quot; &quot;T000&quot;     &quot;T002&quot;     &quot;T014&quot;     &quot;T021&quot;     &quot;T042&quot;</code></pre>
@@ -595,12 +604,23 @@ plot</code></pre>
 <pre class="r"><code>p &lt;- sample_data %&gt;%
   filter(soil_type == &quot;strip&quot;) %&gt;%
   ggboxplot(x = &quot;sample_day&quot;, y = &quot;Shannon&quot;, add = &quot;jitter&quot;)
+
+my_comparisons &lt;- list( c(&quot;T002&quot;, &quot;T014&quot;), c(&quot;T002&quot;, &quot;T000&quot;), c(&quot;Baseline&quot;, &quot;T000&quot;), c(&quot;T014&quot;, &quot;T021&quot;), c(&quot;T021&quot;, &quot;T042&quot;))
+
+plot &lt;- p + stat_compare_means(comparisons = my_comparisons, label = &quot;p.signif&quot;) +
+  ggtitle(&quot;Shannon diversity index of WORLE detph 1 Crop soils, rarefied to 10k&quot;) +
+  ylab(&quot;Shannon Diversity&quot;) +
+  xlab(&quot;Sampling Day&quot;) 
+
+p &lt;- sample_data %&gt;%
+  filter(soil_type == &quot;crop&quot;) %&gt;%
+  ggboxplot(x = &quot;sample_day&quot;, y = &quot;Shannon&quot;, add = &quot;jitter&quot;)
 p</code></pre>
 <p><img src="Diversity_Stats_files/figure-html/unnamed-chunk-3-1.png" width="816" /></p>
 <pre class="r"><code>my_comparisons &lt;- list( c(&quot;T002&quot;, &quot;T014&quot;), c(&quot;T002&quot;, &quot;T000&quot;), c(&quot;Baseline&quot;, &quot;T000&quot;), c(&quot;T014&quot;, &quot;T021&quot;), c(&quot;T021&quot;, &quot;T042&quot;))
 
 plot &lt;- p + stat_compare_means(comparisons = my_comparisons, label = &quot;p.signif&quot;) +
-  ggtitle(&quot;Shannon diversity index of WORLE detph 1 Prairie soils, rarefied to 10k&quot;) +
+  ggtitle(&quot;Shannon diversity index of WORLE detph 1 Crop soils, rarefied to 10k&quot;) +
   ylab(&quot;Shannon Diversity&quot;) +
   xlab(&quot;Sampling Day&quot;) 
 plot</code></pre>
@@ -695,14 +715,14 @@ plot</code></pre>
 <pre><code>## 1243OTUs were removed because they are no longer 
 ## present in any sample after random subsampling</code></pre>
 <pre><code>## ...</code></pre>
-<pre class="r"><code>sample_data &lt;- sample_data(rWd2) %&gt;%
+<pre class="r"><code>sample_data2 &lt;- sample_data(rWd2) %&gt;%
   lapply(., factor) %&gt;%
   as_tibble() 
   
 richness &lt;- estimate_richness(rWd2) 
-sample_data &lt;- cbind(sample_data, richness)
+sample_data2 &lt;- cbind(sample_data2, richness)
 
-p &lt;- ggboxplot(sample_data, x = &quot;sample_day&quot;, y = &quot;Shannon&quot;, fill = &quot;soil_type&quot;, add = &quot;jitter&quot;)
+p &lt;- ggboxplot(sample_data2, x = &quot;sample_day&quot;, y = &quot;Shannon&quot;, fill = &quot;soil_type&quot;, add = &quot;jitter&quot;)
 
 plot &lt;- p + stat_compare_means(aes(group = soil_type), label = &quot;p.signif&quot;) +
   ggtitle(&quot;Shannon diversity index of WORLE detph 2 soils rarefied to 10k reads&quot;) +
@@ -711,6 +731,35 @@ plot &lt;- p + stat_compare_means(aes(group = soil_type), label = &quot;p.signif
 plot</code></pre>
 <p><img src="Diversity_Stats_files/figure-html/Shannon%20rare%202-1.png" width="816" /></p>
 <pre class="r"><code>ggsave(&quot;images/WorlerD2Shannon.png&quot;, plot = plot, device = &quot;png&quot;, width = 6, height = 4, units = &quot;in&quot;)</code></pre>
+<pre class="r"><code># sample data 2 is rarefied, this is shannon
+p &lt;- sample_data2 %&gt;%
+  filter(soil_type == &quot;strip&quot;) %&gt;%
+  ggboxplot(x = &quot;sample_day&quot;, y = &quot;Shannon&quot;, add = &quot;jitter&quot;)
+
+my_comparisons &lt;- list( c(&quot;T002&quot;, &quot;T014&quot;), c(&quot;T002&quot;, &quot;T000&quot;), c(&quot;Baseline&quot;, &quot;T000&quot;), c(&quot;T014&quot;, &quot;T021&quot;), c(&quot;T021&quot;, &quot;T042&quot;))
+
+plot &lt;- p + stat_compare_means(comparisons = my_comparisons, label = &quot;p.signif&quot;) +
+  ggtitle(&quot;Shannon diversity index of WORLE detph 2 Prairie soils, rarefied to 10k&quot;) +
+  ylab(&quot;Shannon Diversity&quot;) +
+  xlab(&quot;Sampling Day&quot;) 
+plot</code></pre>
+<p><img src="Diversity_Stats_files/figure-html/unnamed-chunk-7-1.png" width="816" /></p>
+<pre class="r"><code>p &lt;- sample_data %&gt;%
+  filter(soil_type == &quot;strip&quot;) %&gt;%
+  ggboxplot(x = &quot;sample_day&quot;, y = &quot;ACE&quot;, add = &quot;jitter&quot;)
+
+my_comparisons &lt;- list( c(&quot;T002&quot;, &quot;T014&quot;), c(&quot;T002&quot;, &quot;T000&quot;), c(&quot;Baseline&quot;, &quot;T000&quot;), c(&quot;T014&quot;, &quot;T021&quot;), c(&quot;T021&quot;, &quot;T042&quot;))
+
+plot &lt;- p + stat_compare_means(comparisons = my_comparisons, label = &quot;p.signif&quot;) +
+  ggtitle(&quot;ACE diversity index of WORLE depth 2 Prairie soils&quot;) +
+  ylab(&quot;ACE Diversity&quot;) +
+  xlab(&quot;Sampling Day&quot;) 
+plot</code></pre>
+<pre><code>## Warning in wilcox.test.default(c(442, 535, 559, 657, 598, 558, 556, 539, :
+## cannot compute exact p-value with ties</code></pre>
+<pre><code>## Warning in wilcox.test.default(c(566, 411, 497, 803, 615, 537, 695, 617, :
+## cannot compute exact p-value with ties</code></pre>
+<p><img src="Diversity_Stats_files/figure-html/unnamed-chunk-8-1.png" width="816" /></p>
 </div>
 
 

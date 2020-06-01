@@ -1,0 +1,180 @@
+---
+title: "Strips soil core bacterial taxa"
+author: "Jared Flater"
+date: "Spring 2020"
+output:
+  html_document:
+    df_print: paged
+    fig_width: 8.5
+    fig_height: 11
+    fig_caption: true
+    toc: true
+    toc_float: true
+    number_sections: false
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries, include=FALSE}
+library(phyloseq)
+library(tidyverse)
+library(ggplot2)
+library(stats)
+library(agricolae)
+library(ggpubr)
+library(kableExtra)
+library(gridExtra)
+```
+
+# Core taxa 
+
+The ASVs that are both highly abundant and occupy the most samples are considered the core taxa, we can plot an abunance occupancy plot to get an idea. 
+
+```{r Load STRIPS, echo=F}
+# Load the r data structure of the merged STRIPs 16s count data
+physeq <- readRDS("data/merged_STRIPs.RDS")
+
+physeq <- physeq %>%
+  filter_taxa(function(x) sum(x) >= 1, T)
+```
+
+Table of the WORLE and Armstrong soil samples
+
+```{r making html table}
+kable(data.frame(sample_data(physeq), row.names = NULL)) %>%
+  kable_styling(bootstrap_options = "striped") %>%
+  scroll_box(width = "100%", height = "600px")
+```
+
+
+```{r making each physeq}
+w.physeq <- subset_samples(physeq, experiment %in% "Worle_Rainfall") %>% 
+  filter_taxa(function(x) sum(x) >= 1, T)
+
+a.physeq <- subset_samples(physeq, experiment %in% "Armstrong_Rainfall") %>%
+  filter_taxa(function(x) sum(x) >= 1, T)
+```
+
+
+```{r making relative abundance}
+# Make relative abundance
+r.w.physeq <- transform_sample_counts(w.physeq, function(x) x/sum(x))
+r.a.physeq <- transform_sample_counts(a.physeq, function(x) x/sum(x))
+```
+
+
+```{r}
+### Scale color for phyla, consistent phyla colors across plots
+#Function to make all phyla colors consistent
+
+phylalist <- data.frame(tax_table(physeq),row.names = NULL) %>%
+  select(Phylum) %>%
+  unique() 
+phylalist$Phylum <- as.character(phylalist$Phylum)
+phylalist$Phylum[is.na(phylalist$Phylum)] <- "Unclassified"
+
+# this package will generate a pallette based on number and desired colors
+library(colorspace)
+colors <- sequential_hcl(n_distinct(phylalist), palette = "viridis") %>%
+  setNames(phylalist$Phylum)
+```
+```{r making function}
+# Function to make abundance occupancy data
+abund_val <- function(physeq){
+  otu.abun = apply(otu_table(physeq),1,mean)
+  # Calculate the frequency of each OTU across all samples
+  otu.freq = rowSums(otu_table(physeq) != 0)/nsamples(physeq)
+  phyla = as.vector(data.frame(tax_table(physeq)))
+  phyla$Phylum <- as.character(phyla$Phylum)
+  phyla$Phylum[is.na(phyla$Phylum)] <- "Unclassified"
+  otuabun = cbind.data.frame(abundance=log(otu.abun),frequency=otu.freq,phyla)
+  return(otuabun)
+}
+```
+```{r}
+abun.w <- abund_val(r.w.physeq)
+
+abun.a <- abund_val(r.a.physeq)
+```
+
+```{r making plots}
+w.a.o <- ggplot(abun.w, aes(x=abundance,y=frequency)) + 
+  geom_point(size=3, aes(color = Phylum)) + 
+  xlab("Average relative abundance (log10 scale)") + 
+  ylab("frequency in all samples") + 
+  labs(title="Distribution of all WORLE ASVs") + 
+  theme(legend.position= "left") +
+  scale_color_manual(values = colors)
+
+
+a.a.o <- ggplot(abun.a, aes(x=abundance,y=frequency)) + 
+  geom_point(size=3, aes(color = Phylum)) + 
+  xlab("Average relative abundance (log10 scale)") + 
+  ylab("frequency in all samples") + 
+  labs(title="Distribution of all Armstrong ASVs") +
+  theme(legend.position="right") + 
+  scale_color_manual(values = colors)
+plots <- grid.arrange(
+  w.a.o ,
+  a.a.o ,
+  nrow = 2,
+  top = "Abundance - Occupancy plots"
+)
+a.a.o
+w.a.o
+
+
+ggsave("images/Core_Taxa_plot.png", plots, device = "png", dpi = 320, width = 18, height = 18, units = "in")
+```
+
+# Core taxa from prairie and ag from each site, depth 1
+
+
+```{r}
+w.d1.p <- subset_samples(physeq, experiment == "Worle_Rainfall" & depth == "1" & soil_type == "strip") %>%
+  filter_taxa(function(x) sum(x) > 0, T) %>%
+  transform_sample_counts(function(x) x/sum(x))
+
+w.d1.p.r <- abund_val(w.d1.p) 
+
+w.d1.p.r.plot <- ggplot(w.d1.p.r, aes(x=abundance,y=frequency)) + 
+  geom_point(size=3, aes(color = Phylum)) + 
+  xlab("Average relative abundance (log10 scale)") + 
+  ylab("frequency in all samples") + 
+  labs(title="Distribution of all Worle Prairie ASVs") + 
+  theme_minimal() +
+  theme(legend.position="right") 
+
+b <- w.d1.p.r.plot + 
+  scale_color_manual(values = colors)
+
+w.d1.a <- subset_samples(physeq, experiment == "Worle_Rainfall" & depth == "1" & soil_type == "crop") %>%
+  filter_taxa(function(x) sum(x) > 0, T) %>%
+  transform_sample_counts(function(x) x/sum(x)) 
+
+w.d1.a.r <- abund_val(w.d1.a) 
+
+w.d1.a.r.plot <- ggplot(w.d1.a.r, aes(x=abundance,y=frequency)) + 
+  geom_point(size=3, aes(color = Phylum)) + 
+  xlab("Average relative abundance (log10 scale)") + 
+  ylab("frequency in all samples") + 
+  labs(title="Distribution of all Worle Ag ASVs") + 
+  theme_minimal() +
+  theme(legend.position="left") 
+
+a <- w.d1.a.r.plot + 
+  scale_color_manual(values = colors)
+
+plots <- grid.arrange(
+  a,
+  b,
+  nrow = 2,
+  top = "Abundance - Occupancy plots"
+)
+
+
+ggsave("images/Worle_PA_Core_Taxa_plot.png", plots, device = "png", dpi = 320, width = 18, height = 18, units = "in")
+```

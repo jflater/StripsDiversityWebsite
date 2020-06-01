@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
 
 <head>
 
 <meta charset="utf-8" />
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="generator" content="pandoc" />
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
@@ -239,6 +238,7 @@ $(document).ready(function () {
   border: none;
   display: inline-block;
   border-radius: 4px;
+  background-color: transparent;
 }
 
 .tabset-dropdown > .nav-tabs.nav-tabs-open > li {
@@ -270,6 +270,12 @@ $(document).ready(function () {
 }
 }
 
+@media print {
+.toc-content {
+  /* see https://github.com/w3c/csswg-drafts/issues/4434 */
+  float: right;
+}
+}
 
 .toc-content {
   padding-left: 30px;
@@ -354,6 +360,9 @@ div.tocify {
 <li>
   <a href="Diversity_Stats.html">Alph Diversity</a>
 </li>
+<li>
+  <a href="core_taxa.html">Core Taxa</a>
+</li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
         
@@ -382,10 +391,7 @@ div.tocify {
 
 
 <p>Data analysis from the 2017 WORLE rainfall simulation</p>
-<div class="figure">
-<img src="images/strips_logo_0-500x368.jpg" />
-
-</div>
+<p><img src="images/strips_logo_0-500x368.jpg" /></p>
 
 
 

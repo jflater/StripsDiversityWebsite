@@ -7,6 +7,8 @@ navbar:
     href: index.html
   - text: Alph Diversity
     href: Diversity_Stats.html
+  - text: Core Taxa 
+    href: core_taxa.html
     
 output:
   html_document:

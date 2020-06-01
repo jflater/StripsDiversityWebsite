@@ -250,7 +250,7 @@ plot <- p + stat_compare_means(comparisons = my_comparisons, label = "p.signif")
   ggtitle("Shannon diversity index of WORLE detph 1 Crop soils, rarefied to 10k") +
   ylab("Shannon Diversity") +
   xlab("Sampling Day") 
-plotlot
+plot
 ```
 ```{r}
 levels(as.factor(sample_data$sample_day))
