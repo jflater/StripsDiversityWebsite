@@ -34,8 +34,8 @@ library(phylosmith)
 # Load RDS
 
 ```{r Read RDS}
-worle <- readRDS("../data/worle_tax_are_seqs.RDS")
-arm <- readRDS("../data/armstrong_tax_are_seqs.RDS")
+worle <- readRDS("data/worle_tax_are_seqs.RDS")
+arm <- readRDS("data/armstrong_tax_are_seqs.RDS")
 worle 
 arm
 ```
@@ -104,20 +104,20 @@ nrow(arm_data)
 sample_data(worle) <- worle_data
 nrow(sample_data(worle))
 nrow(worle_data)
-saveRDS(object = worle, file = "../data/Worle_curated.RDS")
-saveRDS(object = arm, file = "../data/Arm_curated.RDS")
+saveRDS(object = worle, file = "data/Worle_curated.RDS")
+saveRDS(object = arm, file = "data/Arm_curated.RDS")
 rm(arm_data, arm_data1, worle_data, worle_data1)
 ```
 
 ```{r Merge Phsyeqs}
-worle <- readRDS("../data/Worle_curated.RDS")
+worle <- readRDS("data/Worle_curated.RDS")
 worle
-arm <- readRDS("../data/Arm_curated.RDS")
+arm <- readRDS("data/Arm_curated.RDS")
 arm
 
 STRIPS <- merge_phyloseq(worle, arm)
 STRIPS
-saveRDS(STRIPS, file = "../data/all_samples_merged_STRIPS.RDS")
+saveRDS(STRIPS, file = "data/all_samples_merged_STRIPS.RDS")
 ```
 ```{r}
 ### Scale color for phyla, consistent phyla colors across plots
