@@ -1,0 +1,355 @@
+---
+title: "Strips soil manure associated taxa"
+author: "Jared Flater"
+date: "Spring 2020"
+output:
+  html_document:
+    df_print: paged
+    fig_width: 8.5
+    fig_height: 11
+    fig_caption: true
+    toc: true
+    toc_float: true
+    number_sections: false
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Libraries
+
+```{r More Libraries}
+library(phyloseq)
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+library(kableExtra)
+library(venn)
+library(phylosmith)
+library(phylosmith)
+```
+
+# Load RDS
+
+```{r Read RDS}
+worle <- readRDS("../data/worle_tax_are_seqs.RDS")
+arm <- readRDS("../data/armstrong_tax_are_seqs.RDS")
+worle 
+arm
+```
+
+# Make names for environmental and experimental variables consistent
+
+```{r Sample Data}
+arm_data1 <- data.frame(sample_data(arm))
+
+worle_data1 <- data.frame(sample_data(worle))
+```
+```{r arm table}
+kable(arm_data1) %>%
+  kable_styling(bootstrap_options = "striped") %>%
+  scroll_box(width = "100%", height = "600px")
+```
+```{r worle table}
+kable(worle_data1) %>%
+  kable_styling(bootstrap_options = "striped") %>%
+  scroll_box(width = "100%", height = "600px")
+```
+## Change WORLE
+```{r Change WORLE}
+worle_data <- worle_data1  %>%
+  dplyr::select(unique_id = id, experiment = PI, matrix, treatment, plot, sample_day = day, depth, in_plot_location, block) %>%
+  mutate(experiment = "Worle_Rainfall") %>%
+  mutate(strip = ifelse(treatment %in% c("no_manure_strip", "manured_strip"), "Y", "N")) %>%
+  mutate(manure_treatment = ifelse(treatment %in% c("manured_control", "manured_strip"), "Y", "N")) %>%
+  mutate(soil_type = ifelse(in_plot_location %in% c("s1", "s2", "s3", "s4"), "crop",
+                            ifelse(in_plot_location %in% c("s6", "s7", "s8", "s9"), "strip", "border"))) %>%
+  mutate(sample_day = ifelse(sample_day == 'b', "Baseline",
+                             ifelse(sample_day == "t0", "T000",
+                                    ifelse(sample_day == "t2", "T002",
+                                           ifelse(sample_day == "t14", "T014", 
+                                                  ifelse(sample_day == "t21", "T021", "T042"
+                                                 )))))) %>%
+  mutate(depth = ifelse(depth == "d1", "1", "2"))
+worle_data$in_plot_location[worle_data$in_plot_location == "S6"] <- "s6"
+kable(worle_data) %>%
+  kable_styling(bootstrap_options = "striped") %>%
+  scroll_box(width = "100%", height = "600px")
+```
+
+## Change Armstrong
+
+```{r Armstrong Data change}
+arm_data <- arm_data1 %>%
+  mutate(in_plot_location = sample_num) %>%
+  mutate(treatment = ifelse(treatment == 'ACS', "no_manure_strip",
+                             ifelse(treatment == "ACM", "manured_control",
+                                    ifelse(treatment == "ACSM", "manured_strip", "NA"
+                                          )))) 
+arm_data$sample_day[arm_data$sample_day == "TB"] <- "Baseline"
+arm_data$in_plot_location <- paste0('s', arm_data$in_plot_location) # WORLE has s before in_plot_location
+
+kable(arm_data) %>%
+  kable_styling(bootstrap_options = "striped") %>%
+  scroll_box(width = "100%", height = "600px")
+```
+```{r Re-make sample data and save as RDS}
+rownames(arm_data) <- arm_data$unique_id
+rownames(worle_data) <- worle_data$unique_id
+sample_data(arm) <- arm_data
+nrow(sample_data(arm))
+nrow(arm_data)
+sample_data(worle) <- worle_data
+nrow(sample_data(worle))
+nrow(worle_data)
+saveRDS(object = worle, file = "../data/Worle_curated.RDS")
+saveRDS(object = arm, file = "../data/Arm_curated.RDS")
+rm(arm_data, arm_data1, worle_data, worle_data1)
+```
+
+```{r Merge Phsyeqs}
+worle <- readRDS("../data/Worle_curated.RDS")
+worle
+arm <- readRDS("../data/Arm_curated.RDS")
+arm
+
+STRIPS <- merge_phyloseq(worle, arm)
+STRIPS
+saveRDS(STRIPS, file = "../data/all_samples_merged_STRIPS.RDS")
+```
+```{r}
+### Scale color for phyla, consistent phyla colors across plots
+#Function to make all phyla colors consistent
+
+phylalist <- data.frame(tax_table(STRIPS),row.names = NULL) %>%
+  select(Phylum) %>%
+  unique() 
+phylalist$Phylum <- as.character(phylalist$Phylum)
+phylalist$Phylum[is.na(phylalist$Phylum)] <- "Unclassified"
+
+# this package will generate a pallette based on number and desired colors
+library(colorspace)
+colors <- sequential_hcl(n_distinct(phylalist), palette = "viridis") %>%
+  sample() %>%
+  setNames(phylalist$Phylum)
+rm(STRIPS)
+```
+
+```{r plot armstrong manure}
+arm_manure <- subset_samples(arm, matrix == c("manure"))
+sample_names(arm_manure)
+data.frame(sample_sums(arm_manure)) %>%
+  rownames_to_column(var = "Sample") %>%
+  as_tibble() %>%
+  ggplot(aes(x = reorder(Sample, sample_sums.arm_manure.), y = sample_sums.arm_manure.)) + 
+  geom_bar(stat = "identity")
+
+arm_manure_mintax1 <- arm_manure %>%
+  filter_taxa(function(x) sum(x) >= 1, T) 
+rm(arm_manure)
+data.frame(sample_sums(arm_manure_mintax1)) %>%
+  rownames_to_column(var = "Sample") %>%
+  as_tibble() %>% 
+  ggplot(aes(x = reorder(Sample, sample_sums.arm_manure_mintax1.), y = sample_sums.arm_manure_mintax1.)) + 
+  geom_bar(stat = "identity")
+
+arm_manure_asvs <- taxa_names(arm_manure_mintax1)
+
+armphylo <- phylogeny_profile(arm_manure_mintax1, classification = "Phylum") 
+ 
+armphylo + scale_color_manual(aesthetics = "fill", values = colors)
+```
+
+```{r plot worle manure}
+worle_manure <- subset_samples(worle, matrix == c("manure"))
+sample_names(worle_manure)
+data.frame(sample_sums(worle_manure)) %>%
+  rownames_to_column(var = "Sample") %>%
+  as_tibble() %>%
+  ggplot(aes(x = reorder(Sample, sample_sums.worle_manure.), y = sample_sums.worle_manure.)) + 
+  geom_bar(stat = "identity")
+
+worle_manure_mintax1 <- worle_manure %>%
+  filter_taxa(function(x) sum(x) >= 1, T) 
+rm(worle_manure)
+data.frame(sample_sums(worle_manure_mintax1)) %>%
+  rownames_to_column(var = "Sample") %>%
+  as_tibble() %>% 
+  ggplot(aes(x = reorder(Sample, sample_sums.worle_manure_mintax1.), y = sample_sums.worle_manure_mintax1.)) + 
+  geom_bar(stat = "identity")
+
+worle_manure_asvs <- taxa_names(worle_manure_mintax1)
+
+worlephylo <- phylogeny_profile(worle_manure_mintax1, classification = "Phylum") 
+
+worlephylo + scale_color_manual(aesthetics = "fill", values = colors)
+```
+
+```{r}
+arm_soil_mintax1 <- subset_samples(arm, matrix == c("soil") & manure_treatment == c("N")) %>%
+  filter_taxa(function(x) sum(x) >= 1, T)
+nsamples(arm_soil_mintax1)
+kable(data.frame(sample_data(arm_soil_mintax1), row.names = NULL)) %>%
+  kable_styling(bootstrap_options = "striped") %>%
+  scroll_box(width = "100%", height = "600px")
+
+arm_soil_asvs <- taxa_names(arm_soil_mintax1)
+```
+
+```{r}
+worle_soil_mintax1 <- subset_samples(worle, matrix == c("soil") & manure_treatment == c("N")) %>%
+  filter_taxa(function(x) sum(x) >= 1, T)
+nsamples(arm_soil_mintax1)
+kable(data.frame(sample_data(worle_soil_mintax1), row.names = NULL)) %>%
+  kable_styling(bootstrap_options = "striped") %>%
+  scroll_box(width = "100%", height = "600px")
+
+worle_soil_asvs <- taxa_names(worle_soil_mintax1)
+```
+
+# Venn diagrams of manure ASVs
+
+## Armstrong Venn
+
+List of manure associated ASVs not detected in soil samples, left side of the venn
+
+```{r}
+arm_vvv_diag <- venn(list("Manure_ASVs" = arm_manure_asvs, "Soil_ASVs" = arm_soil_asvs))
+arm_manure_persitors <- attr(arm_vvv_diag, "intersections")$Manure_ASVs
+```
+
+## Worle venn
+
+```{r}
+worle_vvv_diag <- venn(list("Manure_ASVs" = worle_manure_asvs, "Soil_ASVs" = worle_soil_asvs))
+worle_manure_persitors <- attr(worle_vvv_diag, "intersections")$Manure_ASVs
+```
+
+```{r}
+arm.soil.phy <- subset_samples(arm, matrix == "soil") %>%
+  filter_taxa(function(x) sum(x) >= 1, T) %>% 
+  transform_sample_counts(function(x) x / sum(x))
+unique(arm.soil.phy@sam_data$treatment)
+
+arm.persistors.phy <- prune_taxa(arm_manure_persitors, arm.soil.phy)
+
+ntaxa(arm.persistors.phy)
+kable(data.frame(sample_data(arm.persistors.phy), row.names = NULL)) %>%
+  kable_styling(bootstrap_options = "striped") %>%
+  scroll_box(width = "100%", height = "600px")
+```
+
+```{r}
+worle.soil.phy <- subset_samples(worle, matrix == "soil") %>%
+  filter_taxa(function(x) sum(x) >= 1, T) %>% 
+  transform_sample_counts(function(x) x / sum(x))
+
+worle.persistors.phy <- prune_taxa(worle_manure_persitors, worle.soil.phy)
+
+ntaxa(worle.persistors.phy)
+kable(data.frame(sample_data(worle.persistors.phy), row.names = NULL)) %>%
+  kable_styling(bootstrap_options = "striped") %>%
+  scroll_box(width = "100%", height = "600px")
+```
+# Plots
+
+## Armstrong plot
+
+```{r}
+arm.melted <- psmelt(arm.persistors.phy)
+unique(arm.melted$treatment)
+arm.g <- ggplot(arm.melted, aes(x = in_plot_location, y = Abundance))
+arm.plot <- arm.g + 
+  geom_bar(aes(fill = Phylum), stat = "identity") +
+  facet_grid(sample_day~treatment)
+arm.plot + scale_color_manual(aesthetics = "fill", values = colors)
+```
+
+## WORLE plot
+
+```{r}
+worle.melted <- psmelt(worle.persistors.phy)
+
+worle.g <- ggplot(worle.melted, aes(x = in_plot_location, y = Abundance))
+
+worle.plot <- worle.g + 
+  geom_bar(aes(fill = Phylum), stat = "identity") +
+  facet_grid(sample_day~treatment)
+worle.plot + scale_color_manual(aesthetics = "fill", values = colors)
+```
+
+It appears that Armstrong has a significantly higher portion of manure associated bacteria, we should investigate the validity of this...
+
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

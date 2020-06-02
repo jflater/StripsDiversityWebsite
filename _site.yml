@@ -9,6 +9,8 @@ navbar:
     href: Diversity_Stats.html
   - text: Core Taxa 
     href: core_taxa.html
+  - text: Manure taxa
+    href: Manure_Associated.html
     
 output:
   html_document:

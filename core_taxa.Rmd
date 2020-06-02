@@ -33,7 +33,7 @@ library(gridExtra)
 
 The ASVs that are both highly abundant and occupy the most samples are considered the core taxa, we can plot an abunance occupancy plot to get an idea. 
 
-```{r Load STRIPS, echo=F}
+```{r Load STRIPS}
 # Load the r data structure of the merged STRIPs 16s count data
 physeq <- readRDS("data/merged_STRIPs.RDS")
 

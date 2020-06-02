@@ -1,0 +1,250 @@
+---
+title: "Merging_DADA2_Phyloseq"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Google drive downlaod RDS
+```{r Install Google Drive}
+# Google drive 
+#install.packages("googledrive")
+```
+```{r Libraries}
+#library("googledrive")
+```
+```{r Drive auth and dl docs}
+# # Downlaod data from google drive
+# drive_auth()
+# drive_find(n_max = 10)
+# drive_download("Worle/Armstrong_Alt_Flater/Data/worle_with_meta_final.RDS")
+# drive_download("Worle/Armstrong_Alt_Flater/Data/armstrong_with_meta_final.RDS")
+```
+# Libraries
+```{r More Libraries}
+library(phyloseq)
+library(tidyverse)
+```
+# Load RDS
+```{r Read RDS}
+worle <- readRDS("../Data/worle_tax_are_seqs.RDS")
+arm <- readRDS("../Data/armstrong_tax_are_seqs.RDS")
+worle 
+arm
+```
+
+```{r Colnames}
+colnames(sample_data(worle))
+colnames(sample_data(arm))
+unique(arm@sam_data$experiment)
+unique(arm@sam_data$sample_day)
+unique(worle@sam_data$day)
+```
+
+#Subset each to no manure strips
+
+```{r Subset PHYSEQ}
+worle_sub <- subset_samples(worle, treatment == "no_manure_strip" & matrix == "soil")
+arm_sub <- subset_samples(arm, treatment == "ACS" & matrix == "soil")
+worle_sub
+arm_sub
+```
+
+# Make names for environmental and experimental variables consistent
+```{r Sample Data}
+arm_data1 <- as.data.frame(sample_data(arm_sub))
+worle_data1 <- as.data.frame(sample_data(worle_sub))
+library(tidyverse)
+```
+```{r Colnames Two}
+colnames(arm_data1)
+colnames(worle_data1)
+```
+```{r Change WORLE}
+worle_data <- worle_data1  %>%
+  select(unique_id = id, experiment = PI, matrix, treatment, plot,sample_day = day, depth, in_plot_location, block) %>%
+  mutate(experiment = "Worle_Rainfall", strip = "Y", manure_treatment = "N") %>%
+  mutate(soil_type = ifelse(in_plot_location %in% c("s1", "s2", "s3", "s4"), "crop",
+                            ifelse(in_plot_location %in% c("s6", "s7", "s8", "s9"), "strip", "border"))) %>%
+  mutate(sample_day = ifelse(sample_day == 'b', "Baseline",
+                             ifelse(sample_day == "t0", "T000",
+                                    ifelse(sample_day == "t2", "T002",
+                                           ifelse(sample_day == "t14", "T014", 
+                                                  ifelse(sample_day == "t21", "T021", "T042"
+                                                 )))))) %>%
+  mutate(depth = ifelse(depth == "d1", "1", "2"))
+```
+```{r Armstrong Data change}
+colnames(worle_data)
+colnames(arm_data1)
+worle_data$in_plot_location
+arm_data <- as_tibble(arm_data1) %>%
+  rename(in_plot_location = sample_num) %>%
+  mutate(treatment = "no_manure_strip") 
+arm_data$sample_day[arm_data$sample_day == "TB"] <- "Baseline"
+arm_data$in_plot_location <- paste0('s', arm_data$in_plot_location) # WORLE has s before in_plot_location
+unique(arm_data$sample_day)
+```
+```{r Re-make sample data and save as RDS}
+rownames(arm_data) <- arm_data$unique_id
+rownames(worle_data) <- worle_data$unique_id
+sample_data(arm_sub) <- as.data.frame(arm_data)
+sample_data(worle_sub) <- worle_data
+saveRDS(object = worle_sub, file = "../Data/Worle_no_manure.RDS")
+saveRDS(object = arm_sub, file = "../Data/Arm_no_manure.RDS")
+```
+
+```{r Merge Phsyeqs}
+worle_sub <- readRDS("../Data/Worle_no_manure.RDS")
+worle_sub
+arm_sub <- readRDS("../Data/Arm_no_manure.RDS")
+arm_sub
+STRIPS <- merge_phyloseq(worle_sub, arm_sub)
+STRIPS
+saveRDS(STRIPS, file = "../Data/merged_STRIPs.RDS")
+```
+```{r Check colnames of merged}
+colnames(sample_data(STRIPS))
+```
+
+
+```{r Plot richness ~ Depth}
+plot_richness(physeq = STRIPS, measures = c("Shannon", "Chao1"), color = "soil_type", shape = "experiment") +
+  facet_wrap(. ~ depth)
+```
+
+```{r Plot richness ~ Depth with different colors}
+plot_richness(physeq = STRIPS, measures = c("Shannon", "Chao1"), color = "experiment", x = "sample_day", shape = "soil_type") +
+  facet_wrap(. ~ depth)
+hist(sample_sums(STRIPS), breaks = 100)
+min(sample_sums(STRIPS))
+```
+# Digging deeper
+```{r Depth 1}
+d1 <- subset_samples(STRIPS, depth == "1") %>%
+  filter_taxa(function(x) sum(x) >= 0, T)
+d1  
+```
+```{r D1 richness}
+plot_richness(d1, measures = c("Shannon", "Chao1"), x = "soil_type", color = "experiment") + geom_boxplot()
+```
+```{r Glom D1}
+rank_names(d1)[6]
+glom_d1 <- tax_glom(d1, taxrank = rank_names(d1)[6])
+```
+```{r glomed richness}
+plot_richness(glom_d1, measures = c("Shannon", "Chao1"), x = "soil_type", color = "experiment") + geom_boxplot()
+```
+```{r}
+plot_richness(glom_d1, measures = c("Shannon", "Chao1"), x = "in_plot_location", color = "experiment") + geom_boxplot()
+head(sample_data(STRIPS))
+```
+
+```{r}
+colnames(sample_data(glom_d1))
+plot_richness(glom_d1, measures = c("Chao1"), x = "in_plot_location", color = "soil_type") + facet_grid(experiment ~ sample_day) + geom_boxplot()
+
+```
+```{r}
+library(viridisLite)
+plot_richness(worle_sub, measures = c("Observed"), x = "in_plot_location", color = "soil_type") + 
+  facet_grid(depth ~ sample_day) + 
+  geom_boxplot() +
+  scale_color_brewer(palette = "Set1") +
+  theme_minimal()
+```
+```{r}
+plot_richness(STRIPS, measures = c("Chao1"), x = "in_plot_location", color = "soil_type") + 
+  facet_grid(depth ~ sample_day) + 
+  geom_boxplot() +
+  scale_color_brewer(palette = "Set1") +
+  theme_minimal()
+```
+
+```{r Ordinations}
+plot_ordination(d1, ordinate(d1, "MDS"), color = "experiment") + geom_point(size = 5)
+plot_ordination(glom_d1, ordinate(d1, "MDS"), color = "experiment") + geom_point(size = 5)
+plot_ordination(glom_d1, ordinate(d1, "MDS"), color = "soil_type") + geom_point(size = 5)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
