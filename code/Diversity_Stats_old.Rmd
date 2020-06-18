@@ -1,0 +1,249 @@
+---
+title: "Bacterial diversity in agricultural and prairie strip soils"
+author: "Jared Flater"
+date: "5/18/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(phyloseq)
+library(tidyverse)
+library(ggplot2)
+library(stats)
+```
+
+```{r}
+data("soilrep")
+soilrep
+sample_data(soilrep)
+```
+
+```{r}
+erich <- estimate_richness(soilrep, measures = c("Observed", "Shannon", "Simpson", "Fisher"))
+ttest <- t(sapply(erich, function(x) unlist(t.test(x~sample_data(soilrep)$warmed)[c("estimate","p.value","statistic","conf.int")])))
+ttest
+```
+
+```{r}
+StripsPhy <- readRDS("../Data/merged_STRIPs.RDS")
+
+StripsPhy <- StripsPhy %>%
+  filter_taxa(function(x) sum(x) >= 1, T)
+
+StripsPhy
+
+min(taxa_sums(StripsPhy))
+
+StripsPhy@sam_data$matrix
+```
+# Chao1 and ACE    
+Both are nonparametric diversity estimates
+```{r}
+plot <- plot_richness(StripsPhy, x = "soil_type", measures = c("Chao1", "ACE")) +
+  geom_boxplot() +
+  facet_grid(variable ~ sample_day)
+
+plot
+```
+
+# Compare depth 1 WORLE prairie to ag
+```{r}
+Wd1 <- subset_samples(StripsPhy, experiment %in% "Worle_Rainfall" & depth %in% 1 & !soil_type %in% "border") %>%
+  filter_taxa(function(x) sum(x) >= 1, T)
+Wd1
+```
+```{r}
+plot <- plot_richness(Wd1, x = "soil_type", measures = c("Chao1", "ACE")) +
+  geom_boxplot()
+plot
+plot <- plot_richness(Wd1, x = "sample_day", measures = c("Chao1", "ACE"), color = "soil_type") +
+  geom_boxplot()
+plot
+```
+```{r}
+Wd1.Richness <- estimate_richness(Wd1, measures = c("Chao1", "ACE"))
+ttest <- t(sapply(Wd1.Richness, function(x) unlist(t.test(x~sample_data(Wd1)$soil_type)[c("estimate","p.value","statistic","conf.int")])))
+ttest
+```
+```{r}
+
+compare_alpha <- function(var1, physeq) {
+  # Calcuate alpha diversity
+  sample_data <- sample_data(physeq) %>%
+  as_tibble()
+  sample_data$alpha <- estimate_richness(physeq, measures = c("ACE")) %>% 
+    select(ACE) %>%
+    unlist()
+  # Do ANOVA
+  sample_data$grouping <- sample_data[[grouping_var]] # needed for how `aov` works
+  anova_result <- aov(alpha ~ grouping, sample_data)
+  # Do Tukey's HSD test
+  tukey_result <- HSD.test(anova_result, "grouping", group = TRUE)
+  # Plot result
+  group_data <- tukey_result$groups[order(rownames(tukey_result$groups)),]
+  my_plot <- ggplot(sample_data, aes(x = grouping, y = alpha)) +
+    geom_text(data = data.frame(),
+              aes(x = rownames(group_data),
+                  y = max(sample_data$alpha) + 1,
+                  label = group_data$groups),
+              col = 'black',
+              size = 10) +
+    geom_boxplot() +
+    ggtitle("Alpha diversity") +
+    xlab(grouping_var) +
+    ylab("Alpha diversity index")
+  # Return plot
+  return(my_plot)
+}
+my_plot
+```
+
+```{r}
+compare_alpha("sample_day", Wd1) 
+```
+
+```{r}
+physeq <- Wd1
+
+c1 <- c("soil_type")
+c2 <- c("sample_day")
+
+sample_data <- sample_data(physeq) %>%
+as_tibble()
+sample_data$alpha <- estimate_richness(physeq, measures = c("ACE")) %>% 
+  select(ACE) %>%
+  unlist()
+# Do ANOVA
+sample_data <- sample_data %>%
+  mutate(grouping = paste(sample_day, soil_type,  sep = 'x'))
+# needed for how `aov` works
+anova_result <- aov(alpha ~ grouping, sample_data)
+anova_result
+# Do Tukey's HSD test
+tukey_result <- HSD.test(anova_result, "grouping", group = TRUE)
+# Plot result
+group_data <- tukey_result$groups[order(rownames(tukey_result$groups)),]
+my_plot <- ggplot(sample_data, aes(x = sample_day, y = alpha)) +
+  # geom_text(data = data.frame(),
+  #           aes(x = rownames(group_data),
+  #               y = max(sample_data$alpha) + 1,
+  #               label = group_data$groups),
+  #           col = 'black',
+  #           size = 10) +
+  geom_boxplot(aes(color = soil_type), position = "dodge") +
+  ggtitle("Alpha diversity") +
+  ylab("Alpha diversity index")
+my_plot
+```
+```{r ACE}
+library(ggpubr)
+sample_data <- sample_data(Wd1) %>%
+  lapply(., factor) %>%
+  as_tibble() 
+  
+richness <- estimate_richness(Wd1) 
+sample_data <- cbind(sample_data, richness)
+
+p <- ggboxplot(sample_data, x = "sample_day", y = "ACE", fill = "soil_type", add = "jitter")
+
+plot <- p + stat_compare_means(aes(group = soil_type), label = "p.signif") +
+  ggtitle("ACE diversity index of WORLE detph 1 soils") +
+  ylab("ACE Diversity") +
+  xlab("Sampling Day") + scale_fill_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
+plot
+ggsave("../Figures/WorleD1ACE.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
+```
+
+
+```{r}
+rWd1 <- rarefy_even_depth(Wd1, sample.size = 10000, rngseed = 12121212, trimOTUs = T)
+```
+Rarefied Diversity
+```{r Rare Richness}
+library(ggpubr)
+sample_data <- sample_data(rWd1) %>%
+  lapply(., factor) %>%
+as_tibble()
+richness <- estimate_richness(rWd1) 
+sample_data <- cbind(sample_data, richness)
+colnames(sample_data)
+```
+```{r ACE}
+p <- ggboxplot(sample_data, x = "sample_day", y = "ACE", fill = "soil_type", add = "jitter")
+
+plot <- p + stat_compare_means(aes(group = soil_type), label = "p.signif") +
+  ggtitle("ACE diversity index of WORLE detph 1 soils, rarefied to 10k") +
+  ylab("ACE Diversity") +
+  xlab("Sampling Day") + scale_fill_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
+plot
+ggsave("../Figures/rWd1ACE.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
+```
+
+```{r Chao1}
+p <- ggboxplot(sample_data, x = "sample_day", y = "Chao1", fill = "soil_type", add = "jitter")
+
+plot <- p + stat_compare_means(aes(group = soil_type), label = "p.signif") +
+  ggtitle("Chao1 diversity index of WORLE detph 1 soils, rarefied to 10k") +
+  ylab("Chao1 Diversity") +
+  xlab("Sampling Day") + scale_fill_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
+plot
+ggsave("../Figures/rWd1Chao1.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
+```
+
+```{r Shannon}
+p <- ggboxplot(sample_data, x = "sample_day", y = "Shannon", fill = "soil_type", add = "jitter")
+
+plot <- p + stat_compare_means(aes(group = soil_type), label = "p.signif") +
+  ggtitle("Shannon diversity index of WORLE detph 1 soils, rarefied to 10k") +
+  ylab("Shannon Diversity") +
+  xlab("Sampling Day") + scale_fill_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
+plot
+ggsave("../Figures/rWd1Shannon.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
+```
+```{r}
+levels(as.factor(sample_data$sample_day))
+levels(as.factor(p$sample_day))
+p <- sample_data %>%
+  filter(soil_type == "strip") %>%
+  ggboxplot(x = "sample_day", y = "Shannon", add = "jitter")
+p
+my_comparisons <- list( c("T002", "T014"), c("T002", "T000"), c("Baseline", "T000"), c("T014", "T021"), c("T021", "T042"))
+
+plot <- p + stat_compare_means(comparisons = my_comparisons, label = "p.signif") +
+  ggtitle("Shannon diversity index of WORLE detph 1 Prairie soils, rarefied to 10k") +
+  ylab("Shannon Diversity") +
+  xlab("Sampling Day") 
+plot
+```
+```{r}
+levels(as.factor(sample_data$sample_day))
+levels(as.factor(p$sample_day))
+p <- sample_data %>%
+  filter(soil_type == "strip") %>%
+  ggboxplot(x = "sample_day", y = "ACE", add = "jitter")
+p
+my_comparisons <- list( c("T002", "T014"), c("T002", "T000"), c("Baseline", "T000"), c("T014", "T021"), c("T021", "T042"))
+
+plot <- p + stat_compare_means(comparisons = my_comparisons, label = "p.signif") +
+  ggtitle("ACE diversity index of WORLE depth 1 Prairie soils, rarefied to 10k") +
+  ylab("ACE Diversity") +
+  xlab("Sampling Day") 
+plot
+```
+```{r}
+p <- sample_data %>%
+  filter(soil_type == "crop") %>%
+  ggviolin(x = "sample_day", y = "ACE", fill = "sample_day",
+         add = "boxplot", add.params = list(fill = "gray"))
+p
+my_comparisons <- list( c("T002", "T014"), c("T002", "T000"), c("Baseline", "T000"), c("T014", "T021"), c("T021", "T042"))
+
+plot <- p + stat_compare_means(comparisons = my_comparisons, label = "p.signif") +
+  ggtitle("ACE diversity index of WORLE depth 1 Crop soils, rarefied to 10k") +
+  ylab("ACE Diversity") +
+  xlab("Sampling Day") + 
+  scale_fill_viridis_d() + 
+  theme(legend.position = "none") 
+plot
+```
+

@@ -284,7 +284,10 @@ It appears that Armstrong has a significantly higher portion of manure associate
 
 
 ```{r}
-
+colnames(sample_data(arm.persistors.phy))
+arm.persistors.phy %>%
+  subset_samples(treatment == c("manured_strip") & sample_day == c("T000")) %>%
+  phylogeny_profile(classification = "Phylum", treatment = "depth")
 ```
 
 
