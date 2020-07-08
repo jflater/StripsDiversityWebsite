@@ -76,7 +76,7 @@ tab <- microbiome::alpha(Wd1, index = "all") # Alternative package to calculate 
 head(tab)
 ```
 
-Let's start by looking at the Shannon and Simpson diversity between crop and ag for baseline samples at WORLE and Armstrong, before rainfall simulation. This will include all treatments because manure had not been applied at this point, making it fair to compare all treatments without worrying about the influence of the manure community. 
+Let's start by looking at the Shannon and Simpson diversity index between crop and ag for baseline samples at WORLE and Armstrong, before rainfall simulation. This will include all treatments because manure had not been applied at this point, making it fair to compare all treatments without worrying about the influence of the manure community. 
 
 ```{r}
 Wdbase <- subset_samples(altstrips, experiment %in% "Worle_Rainfall" & sample_day %in% "Baseline" & !soil_type %in% "border" & depth %in% "1") 
@@ -172,8 +172,87 @@ sample_data(Adbase) %>%
   scale_color_viridis_d() +
   scale_x_discrete(name = "Soil type", labels = c("crop" = "Ag soil", "strip" = "Prairie strip soil"))
 ```
+# Across the plot variation
 
-Prior to rainfall simulation, there were no differences in Shannon or Simpson or Richness (observed) diversity of the baseline soils when comparing prairie soil to crop soil at each site. 
+For the 6 plots that contain strips, we will examine the changes in diversity across space, s1 was the sample furthest into the crop and s9 is the sample furthest into the strip. We are only plotting no manured strip plots. 
+```{r}
+Wdbasestrip <- subset_samples(altstrips, experiment %in% "Worle_Rainfall" & !treatment %in% c("manured_control", "manured_strip") & matrix %in% "soil")
+kable(data.frame(sample_data(Wdbasestrip))) %>%
+  kable_styling(bootstrap_options = "striped") %>%
+  scroll_box(width = "100%", height = "600px")
+Wdbasestrip
+
+data <- sample_data(Wdbasestrip) %>%
+  lapply(., factor) %>%
+  as_tibble() %>%
+  cbind(., estimate_richness(Wdbasestrip, )) 
+data %>%
+  ggboxplot(x = "in_plot_location", y = "Observed", add = "jitter", notch = F, color = "soil_type") + 
+  theme(legend.position = "none") +
+  ggtitle("Observed diversity of Worle soils across space") +
+  ylab("Observed Diversity") +
+  scale_color_viridis_d() +
+  scale_x_discrete(name = "Soil type", labels = c("crop" = "Ag soil", "strip" = "Prairie strip soil")) +
+  facet_grid(depth ~ sample_day)
+
+data %>%
+  ggboxplot(x = "in_plot_location", y = "Shannon", add = "jitter", notch = F, color = "soil_type") + 
+  theme(legend.position = "none") +
+  ggtitle("Shannon diversity of Worle soils across space") +
+  ylab("Shannon Diversity") +
+  scale_color_viridis_d() +
+  scale_x_discrete(name = "Soil type", labels = c("crop" = "Ag soil", "strip" = "Prairie strip soil")) +
+  facet_grid(depth ~ sample_day)
+
+data %>%
+  ggboxplot(x = "in_plot_location", y = "Simpson", add = "jitter", notch = F, color = "soil_type") + 
+  theme(legend.position = "none") +
+  ggtitle("Simpson diversity of Worle soils across space") +
+  ylab("Simpson Diversity") +
+  scale_color_viridis_d() +
+  scale_x_discrete(name = "Soil type", labels = c("crop" = "Ag soil", "strip" = "Prairie strip soil")) +
+  facet_grid(depth ~ sample_day)
+```
+```{r}
+Adbasestrip <- subset_samples(altstrips, experiment %in% "Armstrong_Rainfall" & !treatment %in% c("manured_control", "manured_strip") & matrix %in% "soil")
+kable(data.frame(sample_data(Wdbasestrip))) %>%
+  kable_styling(bootstrap_options = "striped") %>%
+  scroll_box(width = "100%", height = "600px")
+Adbasestrip
+
+
+data <- sample_data(Adbasestrip) %>%
+  lapply(., factor) %>%
+  as_tibble() %>%
+  cbind(., estimate_richness(Adbasestrip, )) 
+data %>%
+  ggboxplot(x = "in_plot_location", y = "Observed", add = "jitter", notch = F, color = "soil_type") + 
+  theme(legend.position = "none") +
+  ggtitle("Observed diversity of Armstrong soils across space") +
+  ylab("Observed Diversity") +
+  scale_color_viridis_d() +
+  scale_x_discrete(name = "Soil type", labels = c("crop" = "Ag soil", "strip" = "Prairie strip soil")) +
+  facet_grid(depth ~ sample_day)
+
+data %>%
+  ggboxplot(x = "in_plot_location", y = "Shannon", add = "jitter", notch = F, color = "soil_type") + 
+  theme(legend.position = "none") +
+  ggtitle("Shannon diversity of Armstrong soils across space") +
+  ylab("Shannon Diversity") +
+  scale_color_viridis_d() +
+  scale_x_discrete(name = "Soil type", labels = c("crop" = "Ag soil", "strip" = "Prairie strip soil")) +
+  facet_grid(depth ~ sample_day)
+
+data %>%
+  ggboxplot(x = "in_plot_location", y = "Simpson", add = "jitter", notch = F, color = "soil_type") + 
+  theme(legend.position = "none") +
+  ggtitle("Simpson diversity of Armstrong soils across space") +
+  ylab("Simpson Diversity") +
+  scale_color_viridis_d() +
+  scale_x_discrete(name = "Soil type", labels = c("crop" = "Ag soil", "strip" = "Prairie strip soil")) +
+  facet_grid(depth ~ sample_day)
+```
+Prior to rainfall simulation, there were no differences in Shannon or Simpson or Richness (observed) diversity of the baseline soils when comparing prairie soil to crop soil at each site (depth 1). 
 
 Let's now look at differences by time for each site. 
 
@@ -245,6 +324,27 @@ plot
 ggsave("images/ArmstrongD1observed.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
 
 ```
+```{r}
+p <- ggboxplot(sample_data, x = "sample_day", y = "Shannon", color = "soil_type", add = "jitter")
+
+plot <- p + stat_compare_means(aes(group = soil_type), label = "p.signif") +
+  ggtitle("Shannon number of species in Armstrong detph 1 soils") +
+  ylab("Shannon species") +
+  xlab("Sampling Day") + scale_color_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
+plot
+ggsave("images/ArmstrongD1Shannon.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
+```
+```{r}
+p <- ggboxplot(sample_data, x = "sample_day", y = "Simpson", color = "soil_type", add = "jitter")
+
+plot <- p + stat_compare_means(aes(group = soil_type), label = "p.signif") +
+  ggtitle("Simpson number of species in Armstrong detph 1 soils") +
+  ylab("Simpson species") +
+  xlab("Sampling Day") + scale_color_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
+plot
+ggsave("images/ArmstrongD1Simpson.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
+```
+
 
 
 Rarefied Diversity
