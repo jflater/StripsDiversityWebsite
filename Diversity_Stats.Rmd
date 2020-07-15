@@ -25,6 +25,7 @@ library(kableExtra)
 library(phylosmith)
 library(data.table)
 library(microbiome)
+library(vegan)
 ```
 
 # Introduction
@@ -215,6 +216,7 @@ data %>%
 ```
 ```{r}
 Adbasestrip <- subset_samples(altstrips, experiment %in% "Armstrong_Rainfall" & !treatment %in% c("manured_control", "manured_strip") & matrix %in% "soil")
+
 kable(data.frame(sample_data(Wdbasestrip))) %>%
   kable_styling(bootstrap_options = "striped") %>%
   scroll_box(width = "100%", height = "600px")
@@ -366,12 +368,12 @@ rm(rsample_data1)
 ```
 
 ```{r Shannon rarefied}
-p <- ggboxplot(rsample_data, x = "sample_day", y = "Shannon", fill = "soil_type", add = "jitter")
+p <- ggboxplot(rsample_data, x = "sample_day", y = "Shannon", color = "soil_type", add = "jitter")
 
 plot <- p + stat_compare_means(aes(group = soil_type), label = "p.signif") +
   ggtitle("Shannon diversity index of WORLE detph 1 soils, rarefied to 10k") +
   ylab("Shannon Diversity") +
-  xlab("Sampling Day") + scale_fill_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
+  xlab("Sampling Day") + scale_color_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
 plot
 ggsave("images/rWd1Shannon.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
 ```
@@ -443,12 +445,12 @@ sample_data <- sample_data(Wd2) %>%
 richness <- estimate_richness(Wd2) 
 sample_data <- cbind(sample_data, richness)
 
-p <- ggboxplot(sample_data, x = "sample_day", y = "ACE", fill = "soil_type", add = "jitter")
+p <- ggboxplot(sample_data, x = "sample_day", y = "ACE", color = "soil_type", add = "jitter")
 
 plot <- p + stat_compare_means(aes(group = soil_type), label = "p.signif") +
   ggtitle("ACE diversity index of WORLE detph 2 soils") +
   ylab("ACE Diversity") +
-  xlab("Sampling Day") + scale_fill_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
+  xlab("Sampling Day") + scale_color_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
 plot
 ggsave("images/WorleD2ACE.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
 ```
@@ -461,12 +463,12 @@ sample_data <- sample_data(Wd2) %>%
 richness <- estimate_richness(Wd2) 
 sample_data <- cbind(sample_data, richness)
 
-p <- ggboxplot(sample_data, x = "sample_day", y = "Chao1", fill = "soil_type", add = "jitter")
+p <- ggboxplot(sample_data, x = "sample_day", y = "Chao1", color = "soil_type", add = "jitter")
 
 plot <- p + stat_compare_means(aes(group = soil_type), label = "p.signif") +
   ggtitle("Chao1 diversity index of WORLE detph 2 soils") +
   ylab("Chao1 Diversity") +
-  xlab("Sampling Day") + scale_fill_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
+  xlab("Sampling Day") + scale_color_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
 plot
 ggsave("images/WorleD2Chao1.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
 ```
@@ -483,12 +485,12 @@ sample_data2 <- sample_data(rWd2) %>%
 richness <- estimate_richness(rWd2) 
 sample_data2 <- cbind(sample_data2, richness)
 
-p <- ggboxplot(sample_data2, x = "sample_day", y = "Shannon", fill = "soil_type", add = "jitter")
+p <- ggboxplot(sample_data2, x = "sample_day", y = "Shannon", color = "soil_type", add = "jitter")
 
 plot <- p + stat_compare_means(aes(group = soil_type), label = "p.signif") +
   ggtitle("Shannon diversity index of WORLE detph 2 soils rarefied to 10k reads") +
   ylab("Shannon Diversity") +
-  xlab("Sampling Day") + scale_fill_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
+  xlab("Sampling Day") + scale_color_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
 plot
 ggsave("images/WorlerD2Shannon.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
 ```
@@ -553,11 +555,11 @@ sample_data(Abase) %>%
   lapply(., factor) %>%
   as_tibble() %>%
   cbind(., estimate_richness(Abase)) %>%
-  ggboxplot(x = "sample_day", y = "ACE", fill = "soil_type", add = "jitter", notch = T) + 
+  ggboxplot(x = "sample_day", y = "Simpson", color = "soil_type", add = "jitter", notch = T) + 
   stat_compare_means(aes(group = soil_type), label = "p.signif") +
-  ggtitle("ACE diversity index of Armstrong baseline detph 1 soils") +
-  ylab("ACE Diversity") +
-  xlab("Sampling Day") + scale_fill_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
+  ggtitle("Simpson diversity index of Armstrong baseline detph 1 soils") +
+  ylab("Simpson Diversity") +
+  xlab("Sampling Day") + scale_color_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
 ```
 
 # Beta Diversity
@@ -613,7 +615,7 @@ adonis(phyloseq::distance(worle, method = "wunifrac") ~ soil_type, data = data.f
 
 ```{r}
 Wd1 <- subset_samples(altstrips, experiment %in% "Worle_Rainfall" & manure_treatment %in% "N" & !soil_type %in% "border" & depth %in% "1")
-taxa_names(Wd1)
+head(taxa_names(Wd1))
 
 singles <- function(phy){
    df <- as(otu_table(phy), "matrix") %>%
@@ -623,5 +625,13 @@ singles <- function(phy){
   return(df)
 }
 singles(Wd1)
+```
+```{r}
+install.packages("picante")
+library(picante)
+if( "FaithPD" %in% measures){
+  	outlist <- c(outlist, list(FaithPD = t(picante::pd(samp = OTU, tree = phy_tree(physeq), include.root = F))[1,] ))
+}
+faithd <- picante::pd(samp = OTU, tree = phy_tree(physeq), include.root = F)
 ```
 
