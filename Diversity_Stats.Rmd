@@ -627,11 +627,11 @@ singles <- function(phy){
 singles(Wd1)
 ```
 ```{r}
-install.packages("picante")
-library(picante)
-if( "FaithPD" %in% measures){
-  	outlist <- c(outlist, list(FaithPD = t(picante::pd(samp = OTU, tree = phy_tree(physeq), include.root = F))[1,] ))
-}
-faithd <- picante::pd(samp = OTU, tree = phy_tree(physeq), include.root = F)
+# install.packages("picante")
+# library(picante)
+# if( "FaithPD" %in% measures){
+#   	outlist <- c(outlist, list(FaithPD = t(picante::pd(samp = OTU, tree = phy_tree(physeq), include.root = F))[1,] ))
+# }
+# faithd <- picante::pd(samp = OTU, tree = phy_tree(physeq), include.root = F)
 ```
 
