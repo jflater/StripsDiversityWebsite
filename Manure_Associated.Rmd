@@ -19,6 +19,14 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Libraries
+```{r}
+devtools::install_github('schuyler-smith/phylosmith')
+library(phylosmith)
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("phyloseq")
+```
 
 ```{r More Libraries}
 library(phyloseq)
@@ -123,18 +131,40 @@ rw <- worle %>%
   filter_taxa(function(x) sum(x) >= 1, T) %>%
   rarefy_even_depth(sample.size = 10000, rngseed = 1231, replace = T)
   
-pcoa_phyloseq(rw, c('matrix'), circle = TRUE) 
+wpcoa <- pcoa_phyloseq(rw, c('matrix'), circle = TRUE) 
 
-ggsave(filename = "~/Desktop/biomark-private/plots/worlepcoa.png", plot = last_plot(), device = "png")
-nmds_phyloseq(rw, c('matrix'), circle = TRUE)
+#ggsave(filename = "~/Desktop/biomark-private/plots/worlepcoa.png", plot = last_plot(), device = "png")
+wnmds <- nmds_phyloseq(rw, c('matrix'), circle = TRUE)
 
-ggsave(filename = "~/Desktop/biomark-private/plots/worleNMDS.png", plot = last_plot(), device = "png")
+#ggsave(filename = "~/Desktop/biomark-private/plots/worleNMDS.png", plot = last_plot(), device = "png")
 rww <- rw %>%
   subset_samples(matrix == c("water")) 
 colnames(sample_data(rww))
-pcoa_phyloseq(rww, c('treatment'), circle = TRUE, method = "bray") 
+rwpcoa <- pcoa_phyloseq(rww, c('treatment'), circle = TRUE, method = "bray") 
 
- 
+rws <- worle %>%
+  subset_samples(matrix == c("soil") & depth == 1 & treatment == c("no_manure_strip")) 
+
+wnmds <- pcoa_phyloseq(rws, c('soil_type'), circle = TRUE)
+wnmds
+ggsave(filename = "~/Documents/StripsDiversityWebsite/images/no_manure_strip_d1_alltax.png", plot = last_plot(), device = "png")
+
+rwsr <- worle %>%
+  subset_samples(matrix == c("soil") & depth == 1 & treatment == c("no_manure_strip")) %>%
+  rarefy_even_depth(sample.size = 10000, rngseed = 1231, replace = T) %>%
+  filter_taxa(function(x) sum(x) >= 10, T)
+
+wnmdsr <- pcoa_phyloseq(rwsr, c('soil_type'), circle = TRUE)
+wnmdsr
+ggsave(filename = "~/Documents/StripsDiversityWebsite/images/no_manure_strip_d1_rmintax10.png", plot = last_plot(), device = "png")
+
+rwsrr <- worle %>%
+  subset_samples(matrix == c("soil") & depth == 1 & sample_day == c("Baseline") & soil_type != c("border")) %>%
+  #rarefy_even_depth(sample.size = 10000, rngseed = 1231, replace = T) %>%
+  filter_taxa(function(x) sum(x) >= 1, T)
+
+wnmdsrr <- pcoa_phyloseq(rwsrr, c('soil_type'), circle = TRUE)
+wnmdsrr
 ```
 
 

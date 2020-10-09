@@ -1,0 +1,62 @@
+---
+title: "Untitled"
+author: "Jared Flater"
+date: "10/8/2020"
+output:
+  html_document: default
+  word_document: default
+  pdf_document: default
+---
+```{r}
+library(tidyverse)
+library(phyloseq)
+library(phylosmith)
+```
+
+# Worle soil
+ 
+```{r setup, include=FALSE}
+worle <- readRDS("data/Worle_curated.RDS")
+```
+
+This data now includes bacterial communities from soil samples from the WOR rainfall experiment. 
+
+```{r}
+soil <- subset_samples(worle, matrix == c("soil"))
+head(sample_data(soil))
+```
+
+# Are bacterial communities in soil from strip different from crop? 
+
+Look at all baseline samples, before manure was applied. Depth is a strong driver of clustering. Seperate into two datasets by depth, S1 and S2.
+```{r}
+s1 <- subset_samples(soil, depth == 1)
+s2 <- subset_samples(soil, depth == 2)
+```
+
+Visualize if samples from crop are different from prairie. Select baseline samples and plot PCoA ordinations.  
+```{r}
+s1plot <- s1 %>%
+  subset_samples(sample_day == c("Baseline")) %>%
+  pcoa_phyloseq(c('soil_type'), circle = TRUE)
+s2plot <- s2 %>%
+  subset_samples(sample_day == c("Baseline")) %>%
+  pcoa_phyloseq(c('soil_type'), circle = TRUE)
+s1plot
+s2plot
+```
+Rarefied and mintax 10
+```{r}
+d1rmintax10 <- subset_samples(soil, depth == 1 & sample_day == c("Baseline")) %>%
+  rarefy_even_depth(sample.size = 10000, rngseed = 1231, replace = T) %>%
+  filter_taxa(function(x) sum(x) >= 10, T) %>%
+  pcoa_phyloseq(c('soil_type'), circle = TRUE)
+
+d2rmintax10 <- subset_samples(soil, depth == 2 & sample_day == c("Baseline")) %>%
+  rarefy_even_depth(sample.size = 10000, rngseed = 1231, replace = T) %>%
+  filter_taxa(function(x) sum(x) >= 10, T) %>%
+  pcoa_phyloseq(c('soil_type'), circle = TRUE)
+d1rmintax10
+d2rmintax10
+```
+
