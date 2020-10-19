@@ -12,6 +12,12 @@ library(tidyverse)
 library(phyloseq)
 library(phylosmith)
 ```
+# Overall Praire vs. Crops at both sites
+```{r}
+WORARM <- readRDS("data/all_samples_merged_STRIPS.RDS")
+soil <- subset_samples(WORARM, matrix == c("soil"))
+pcoa_phyloseq(soil, c('soil_type'), circle = TRUE)
+```
 
 # Worle soil
  
