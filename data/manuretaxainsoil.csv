@@ -1,0 +1,13 @@
+treatment,soil_type,ASV_Association,Abundance
+manured_control,crop,Crop_associated,0.01419
+manured_control,crop,Manure_associated,0.00252
+manured_control,crop,No_unique_association,0.97089
+manured_control,crop,Strip_associated,0.01240
+manured_strip,crop,Crop_associated,0.01309
+manured_strip,crop,Manure_associated,0.00198
+manured_strip,crop,No_unique_association,0.96725
+manured_strip,crop,Strip_associated,0.01767
+manured_strip,strip,Crop_associated,0.00676
+manured_strip,strip,Manure_associated,0.00007
+manured_strip,strip,No_unique_association,0.97208
+manured_strip,strip,Strip_associated,0.02109

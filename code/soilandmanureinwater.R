@@ -5,21 +5,45 @@ library(phyloseq)
 library(venn)
 library(ggpubr)
 library(phylosmith)
+library(microbiome)
 setwd("~/Documents/StripsDiversityWebsite/")
 worle <- readRDS("data/Worle_curated.RDS") 
 
 taxa_names(worle) <- paste0("ASV", seq(ntaxa(worle)))
+worle1 <- subset_samples(worle, matrix %in% c("manure", "soil")) %>%
+  filter_taxa(function(x) sum(x) >= 2, T)
+
+max(sample_sums(worle1))
+min(sample_sums(worle1))
+nsamples(worle1)
+ntaxa(worle1)
+summarize_phyloseq(worle1)
+
+tdt <- sample_sums(worle1) %>%
+  enframe(name = "ID", value = "Sample_sum")
+
+tdt <- as_tibble(sample_data(worle1)) %>%
+  cbind(., sample_sums(worle1)) %>%
+  dplyr::group_by(matrix) %>%
+  dplyr::summarize(Mean_sample_sums = mean(`sample_sums(worle)`, na.rm = TRUE), n_samples = n()) %>%
+  write_csv("data/SSUMSWORLE.csv")
+
 
 worle_manure <- subset_samples(worle, matrix == c("manure")) 
-worle_soil <- subset_samples(worle, matrix == c("soil") & soil_type == c("crop") & sample_day == c("Baseline"))
-worle_strips <- subset_samples(worle, matrix == c("soil") & soil_type == c("strip") & sample_day == c("Baseline"))
+# worle_soil <- subset_samples(worle, matrix == c("soil") & soil_type == c("crop") & sample_day == c("Baseline"))
+# worle_strips <- subset_samples(worle, matrix == c("soil") & soil_type == c("strip") & sample_day == c("Baseline"))
+
+worle_soil <- subset_samples(worle, matrix == c("soil") & soil_type == c("crop") & treatment == c("no_manure_strip"))
+worle_strips <- subset_samples(worle, matrix == c("soil") & soil_type == c("strip") & treatment == c("no_manure_strip"))
 
 worle_manure_mintax1 <- worle_manure %>%
-  filter_taxa(function(x) sum(x) >= 1, T) 
+  filter_taxa(function(x) sum(x) >= 2, T) 
+ntaxa(worle_manure_mintax1)
+phylogeny_profile(worle_manure_mintax1, classification = "Phylum", merge = TRUE, relative_abundance = TRUE)
 worle_crop_soil_mintax1 <- worle_soil %>%
-  filter_taxa(function(x) sum(x) >= 1, T)
+  filter_taxa(function(x) sum(x) >= 2, T)
 worle_strip_soil_mintax1 <- worle_strips %>%
-  filter_taxa(function(x) sum(x) >= 1, T)
+  filter_taxa(function(x) sum(x) >= 2, T)
 
 worle_manure_asvs <- taxa_names(worle_manure_mintax1)
 worle_crop_soil_asvs <- taxa_names(worle_crop_soil_mintax1)
@@ -34,7 +58,7 @@ worle_cropstrip_persistors <- attr(worle_vvv_diag, 'intersections')$`Crop_ASVs:S
 
 
 worle.water.phy <- subset_samples(worle, matrix == "water" & unique_id != "Comp-from-P8-7-10-26-17") %>%
-  filter_taxa(function(x) sum(x) >= 1, T) 
+  filter_taxa(function(x) sum(x) >= 2, T) 
 
 tax_association <- tax_table(worle.water.phy) %>%
   data.frame() %>%
@@ -45,69 +69,41 @@ tax_association <- tax_table(worle.water.phy) %>%
   column_to_rownames("ASV") %>%
   as.matrix()
 
-#taxa_names(worle.water.phy)
-#rownames(tax_association)
+
 tax_table(worle.water.phy) <- tax_association
 
 ####
 # Testing relative abundance plot with full water dataset
-phylogeny_profile(worle.water.phy, classification = 'ASV_Association', treatment = c("treatment"), merge = TRUE, relative_abundance = TRUE)
+plot <- phylogeny_profile(worle.water.phy, classification = 'ASV_Association', treatment = c("treatment"), merge = TRUE, relative_abundance = TRUE)
+plot
+ggsave("images/manureinwater.png", plot = plot, height = 3, width = 11)
+data <- plot$data %>%
+  group_by(plot, treatment, ASV_Association) %>%
+  summarise_at(vars(-OTU, -Sample, -unique_id, -experiment, -matrix, -sample_day, -depth, -in_plot_location, -block, -strip, -manure_treatment, -soil_type), funs(mean(., na.rm=TRUE)))
+data
+write_csv(x = data, file = "data/manuretaxainwater.csv")
+#### Manure ASVs in soil
+worle.soil.phy <- subset_samples(worle, matrix == "soil" & treatment %in% c("manured_control", "manured_strip") & sample_day != c("Baseline")) %>%
+  filter_taxa(function(x) sum(x) >= 2, T) 
+
+tax_association <- tax_table(worle.soil.phy) %>%
+  data.frame() %>%
+  rownames_to_column("ASV") %>%
+  mutate(ASV_Association = ifelse(ASV %in% worle_manure_persitors, "Manure_associated",
+                                  ifelse(ASV %in% worle_crop_persistors, "Crop_associated", 
+                                         ifelse(ASV %in% worle_strip_persistors, "Strip_associated","No_unique_association")))) %>%
+  column_to_rownames("ASV") %>%
+  as.matrix()
 
 
+tax_table(worle.soil.phy) <- tax_association
 
-# # worle.water.phy.merged <- merge_samples(worle.water.phy, "trtandwater")
-# # sample_data(worle.water.phy.merged)$trtandwater <- levels(sample_data(worle.water.phy.merged)$trtandwater)
-# # sample_data(worle.water.phy.merged)
-# 
-# worle.manure.water <- prune_taxa(worle_manure_persitors, worle.water.phy) 
-# worle.manure.water
-# worle.soil.water <- prune_taxa(worle_crop_persistors, worle.water.phy) 
-# worle.soil.water
-# 
-# phylogeny_profile(worle.manure.water, classification = 'Phylum', treatment = c("treatment"), merge = TRUE, relative_abundance = F) + 
-#   ggtitle("Manure ASVs in water")
-# phylogeny_profile(worle.soil.water, classification = 'Phylum', treatment = c("treatment"), merge = TRUE, relative_abundance = F) +
-#   ggtitle("Soil ASVs in water")
-# 
-# worle.manure.water.melted <- worle.manure.water %>%
-#   psmelt() %>%
-#   separate(Sample, c('trt', 'A'), sep = " ")
-# worle.soil.water.melted <- worle.soil.water %>%
-#   psmelt() %>%
-#   separate(Sample, c('trt', 'A'), sep = " ")
-# 
-# manure <- ggplot(data = worle.manure.water.melted, aes(x = water_sample, y = Abundance)) + 
-#   geom_bar(aes(fill = Phylum), stat = "identity") +
-#   facet_grid(~trt) +
-#   theme_pubclean() + 
-#   ggtitle("Manure ASVs in water")
-# 
-# soil <- ggplot(data = worle.soil.water.melted, aes(x = water_sample, y = Abundance)) + 
-#   geom_bar(aes(fill = Phylum), stat = "identity") +
-#   facet_grid(~trt) +
-#   theme_pubclean() +
-#   ggtitle("Soil ASVs in water")
-# 
-# # Below to make plots prettier
-# phylalist <- data.frame(tax_table(worle),row.names = NULL) %>%
-#   select(Phylum) %>%
-#   unique() 
-# phylalist$Phylum <- as.character(phylalist$Phylum)
-# phylalist$Phylum[is.na(phylalist$Phylum)] <- "Unclassified"
-# 
-# # this package will generate a pallette based on number and desired colors
-# library(colorspace)
-# colors <- sequential_hcl(n_distinct(phylalist), palette = "viridis") %>%
-#   sample() %>%
-#   setNames(phylalist$Phylum)
-# 
-# addSmallLegend <- function(myPlot, pointSize = 1, textSize = 5, spaceLegend = 0.5) {
-#   myPlot +
-#     guides(shape = guide_legend(override.aes = list(size = pointSize)),
-#            color = guide_legend(override.aes = list(size = pointSize))) +
-#     theme(legend.title = element_text(size = textSize), 
-#           legend.text  = element_text(size = textSize),
-#           legend.key.size = unit(spaceLegend, "lines"))
-# }
-# addSmallLegend(manure) + scale_color_manual(aesthetics = "fill", values = colors)
-# addSmallLegend(soil) + scale_color_manual(aesthetics = "fill", values = colors)
+####
+# Testing relative abundance plot with full soil dataset
+plot <- phylogeny_profile(worle.soil.phy, classification = 'ASV_Association', treatment = c("treatment"), merge = TRUE, relative_abundance = TRUE)
+plot
+data <- plot$data %>%
+  group_by(treatment, soil_type, ASV_Association) %>%
+  summarise_at(vars(-OTU, -Sample, -unique_id, -experiment, -matrix, -sample_day, -depth, -in_plot_location, -block, -strip, -manure_treatment, -plot), funs(mean(., na.rm=TRUE)))
+data
+write_csv(x = data, file = "data/manuretaxainsoil.csv")

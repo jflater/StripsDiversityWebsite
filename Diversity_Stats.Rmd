@@ -26,6 +26,7 @@ library(phylosmith)
 library(data.table)
 library(microbiome)
 library(vegan)
+library(gridExtra)
 ```
 
 # Introduction
@@ -39,6 +40,8 @@ We will look at 3 measures of diversity: observed number of species, Shannon div
 ```{r}
 # Read in all strips samples
 altstrips <- readRDS("data/all_samples_merged_STRIPS.RDS") 
+head(taxa_names(altstrips))
+taxa_names(altstrips) <- paste0("ASV", seq(ntaxa(altstrips)))
 ```
 
 First we can check the number of reads in each sample, after evaluating a rarefaction curve, we found that ~10,000k reads sufficiently captured the species diversity in each sample. We can look at which samples are below 10k reads and that would be lost if we rarefy to 10k reads in each sample. 
@@ -55,123 +58,292 @@ data.frame(sample_sums(altstrips)) %>%
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   facet_grid(depth~experiment)
 ```
-
-It appears there is a fairly balanced distribution of < 10k reads, maybe a few more in WORLE than Armstrong. 
-
-# Depth 1 WORLE
-
-The first 7 cm of soil are depth one, we will compare these samples from prairie and ag portions of the plot. Let's take a look at the total observed number of ASVs and the Simpson and Shannon diversity index at the WORLE site. We will compare samples from the treatment that did not receive manure.
-
-```{r depth 1 subset}
-# Subset to WORLE depth one no manure, exclude the border sample from each plot. 
-Wd1 <- subset_samples(altstrips, experiment %in% "Worle_Rainfall" & manure_treatment %in% "N" & !soil_type %in% "border" & depth %in% "1") 
-
-kable(data.frame(sample_data(Wd1))) %>%
-  kable_styling(bootstrap_options = "striped") %>%
-  scroll_box(width = "100%", height = "600px")
-```
 ```{r}
-summarize_phyloseq(Wd1)
-plot_richness(Wd1, measures = c("Observed", "Shannon", "Simpson"), scales = "free")
-tab <- microbiome::alpha(Wd1, index = "all") # Alternative package to calculate diversity `microbiome`
-head(tab)
+theme_my <- function(base_size = 7, base_family = "Palatino")
+{
+  txt <- element_text(size = 6, colour = "black", face = "plain")
+  bold_txt <- element_text(size = 7, colour = "black", face = "bold")
+  
+  theme_bw(base_size = base_size, base_family = base_family) +
+    theme(
+      #legend.key = element_blank(), 
+      #strip.background = element_blank(), 
+      
+      text = txt, 
+      plot.title = txt, 
+      
+      axis.title = bold_txt, 
+      axis.text = txt,
+      axis.text.x = element_text(angle = 25, vjust = 1, hjust = 1),
+      
+      legend.title = bold_txt, 
+      legend.text = txt) 
+}
+```
+
+```{r rarefaction curve}
+
+physeq <- altstrips
+
+set.seed(42)
+
+calculate_rarefaction_curves <- function(psdata, measures, depths, parallel=FALSE) {
+  require('plyr') # ldply
+  require('reshape2') # melt
+  require('doParallel')
+  
+  # set parallel options if required
+  if (parallel) {
+    paropts  <- list(.packages=c("phyloseq", "reshape2"))
+  } else {
+    paropts  <- NULL
+  }
+  
+  estimate_rarified_richness <- function(psdata, measures, depth) {
+    if(max(sample_sums(psdata)) < depth) return()
+    psdata <- prune_samples(sample_sums(psdata) >= depth, psdata)
+    
+    rarified_psdata <- rarefy_even_depth(psdata, depth, verbose = FALSE)
+    
+    alpha_diversity <- estimate_richness(rarified_psdata, measures = measures)
+    
+    # as.matrix forces the use of melt.array, which includes the Sample names (rownames)
+    molten_alpha_diversity <- melt(as.matrix(alpha_diversity), varnames = c('Sample', 'Measure'), value.name = 'Alpha_diversity')
+    
+    molten_alpha_diversity
+  }
+  
+  names(depths) <- depths # this enables automatic addition of the Depth to the output by ldply
+  rarefaction_curve_data <- ldply(depths, estimate_rarified_richness, psdata = psdata, measures = measures, .id = 'Depth', .progress = ifelse(interactive() && ! parallel, 'text', 'none'), .parallel=parallel, .paropts=paropts)
+  
+  # convert Depth from factor to numeric
+  rarefaction_curve_data$Depth <- as.numeric(levels(rarefaction_curve_data$Depth))[rarefaction_curve_data$Depth]
+  
+  rarefaction_curve_data
+}
+
+# Loading required library and displaying core configuration
+pkgTest <- function(x) {
+    if (!require(x,character.only = TRUE))
+    {
+     install.packages(x,dep=TRUE)
+       if(!require(x,character.only = TRUE)) stop("Package not found")
+    }
+  }
+
+pkgTest('doParallel')
+library(doParallel)
+
+
+#####
+#Read in your physeq object, mine is inc.physeq
+library(phyloseq)
+library(tidyverse)
+
+
+
+# Use multiple cores
+detectCores(all.tests=TRUE)
+# 48
+
+# Setting up and registering the cluster
+cl <- makeCluster(detectCores(all.tests=TRUE))
+registerDoParallel(cl)
+
+rarefaction_curve_data <- calculate_rarefaction_curves(physeq, c('Observed'), rep(c(1, 10, 100, 1000, 1:100 * 1000), each = 10))
+#####
+
+# Shut down cluster
+stopCluster(cl)
+rm(cl)
+registerDoSEQ()
+
+summary(rarefaction_curve_data)
+
+rarefaction_curve_data_summary <- ddply(rarefaction_curve_data, c('Depth', 'Sample', 'Measure'), summarise, Alpha_diversity_mean = mean(Alpha_diversity), Alpha_diversity_sd = sd(Alpha_diversity))
+
+sd <- as_tibble(sample_data(physeq)) %>%
+  mutate_if(is.character, str_replace_all, pattern = '-', replacement = '.')
+
+rarefaction_curve_data_summary_verbose <- merge(rarefaction_curve_data_summary, sd, by.x = 'Sample', by.y = 'unique_id')
+library('ggplot2')
+
+plot <- ggplot(
+  data = rarefaction_curve_data_summary_verbose,
+  mapping = aes(
+    x = Depth,
+    y = Alpha_diversity_mean,
+    ymin = Alpha_diversity_mean - Alpha_diversity_sd,
+    ymax = Alpha_diversity_mean + Alpha_diversity_sd,
+    colour = treatment,
+    group = Sample
+  )
+) + geom_line(
+) + geom_pointrange(
+) 
+plot$layers[[2]] <- NULL
+plot 
 ```
 
 Let's start by looking at the Shannon and Simpson diversity index between crop and ag for baseline samples at WORLE and Armstrong, before rainfall simulation. This will include all treatments because manure had not been applied at this point, making it fair to compare all treatments without worrying about the influence of the manure community. 
+```{r}
+altstrips <- subset_samples(altstrips, !soil_type %in% "border" & matrix %in% "soil" & treatment %in% "no_manure_strip") %>%
+  filter_taxa(function(x) sum(x) >= 2, T)
+altstrips
+max(sample_sums(altstrips))
+min(sample_sums(altstrips))
+nsamples(altstrips)
+ntaxa(altstrips)
+summarize_phyloseq(altstrips)
+
+tdt <- sample_sums(altstrips) %>%
+  enframe(name = "ID", value = "Sample_sum")
+
+tdt <- as_tibble(sample_data(altstrips)) %>%
+  cbind(., sample_sums(altstrips)) %>%
+  dplyr::group_by(experiment, soil_type, sample_day, depth) %>%
+  dplyr::summarize(Mean_sample_sums = mean(`sample_sums(altstrips)`, na.rm = TRUE), n_samples = n()) %>%
+  write_csv("data/nSamplesStripsDiversity.csv")
+```
 
 ```{r}
-Wdbase <- subset_samples(altstrips, experiment %in% "Worle_Rainfall" & sample_day %in% "Baseline" & !soil_type %in% "border" & depth %in% "1") 
-Adbase <- subset_samples(altstrips, experiment %in% "Armstrong_Rainfall" & sample_day %in% "Baseline" & !soil_type %in% "border" & depth %in% "1") 
+library(doParallel)
+# Use multiple cores
+detectCores(all.tests = TRUE)
+# 6
 
-#Wdbaserichness <- estimate_richness(Wdbase)
-#Adbaserichness <- estimate_richness(Adbase)
+# Setting up and registering the cluster
+cl <- makeCluster(detectCores(all.tests = TRUE))
+registerDoParallel(cl)
 
-sample_data(Wdbase) %>%
+plot <- phylosmith::pcoa_phyloseq(altstrips, c('experiment', 'soil_type', 'depth'), circle = T)
+#####
+
+# Shut down cluster
+stopCluster(cl)
+rm(cl)
+registerDoSEQ()
+plot
+ggsave("images/DiversityBetaWnAnD1nD2.png", plot = plot)
+```
+
+```{r}
+Wdbase <- subset_samples(altstrips, experiment %in% "Worle_Rainfall" & sample_day %in% "Baseline" & !soil_type %in% "border" & matrix %in% "soil" & treatment %in% "no_manure_strip") %>%
+  filter_taxa(function(x) sum(x) >= 1, T)
+Adbase <- subset_samples(altstrips, experiment %in% "Armstrong_Rainfall" & sample_day %in% "Baseline" & !soil_type %in% "border" & matrix %in% "soil" & treatment %in% "no_manure_strip") %>%
+  filter_taxa(function(x) sum(x) >= 1, T)
+
+
+W_Base_Shannon <- sample_data(Wdbase) %>%
   lapply(., factor) %>%
   as_tibble() %>%
   cbind(., estimate_richness(Wdbase, )) %>%
-  ggboxplot(x = "soil_type", y = "Shannon", add = "jitter", notch = F, color = "soil_type") + 
-  stat_compare_means() +
-  theme(legend.position = "none") +
-  ggtitle("Shannon diversity index of WORLE baseline detph 1 soils") +
+  ggboxplot(x = "soil_type", y = "Shannon", add = "jitter", notch = F, color = "soil_type", size = .2) + 
+  stat_compare_means(size = 2) +
+  ggtitle("Shannon diversity index of WOR baseline soils faceted by depth") +
   ylab("Shannon Diversity") +
   scale_color_viridis_d() +
-  scale_x_discrete(name = "Soil type", labels = c("crop" = "Ag soil", "strip" = "Prairie strip soil"))
+  scale_x_discrete(name = "Soil type", labels = c("crop" = "Ag soil", "strip" = "Prairie strip soil")) +
+  facet_wrap( ~ depth) +
+  theme_my() +
+  theme(legend.position = "none")
 
 print(min(taxa_sums(Wdbase)))
 
 # Armstrong
-sample_data(Adbase) %>%
+A_Base_Shannon <- sample_data(Adbase) %>%
   lapply(., factor) %>%
   as_tibble() %>%
   cbind(., estimate_richness(Adbase, )) %>%
-  ggboxplot(x = "soil_type", y = "Shannon", add = "jitter", notch = F, color = "soil_type") + 
-  stat_compare_means() +
-  theme(legend.position = "none") +
-  ggtitle("Shannon diversity index of Armstrong baseline detph 1 soils") +
+  ggboxplot(x = "soil_type", y = "Shannon", add = "jitter", notch = F, color = "soil_type", size = .2) + 
+  stat_compare_means(size = 2) +
+  ggtitle("Shannon diversity index of ARM baseline soils faceted by depth") +
   ylab("Shannon Diversity") +
   scale_color_viridis_d() +
-  scale_x_discrete(name = "Soil type", labels = c("crop" = "Ag soil", "strip" = "Prairie strip soil"))
+  scale_x_discrete(name = "Soil type", labels = c("crop" = "Ag soil", "strip" = "Prairie strip soil")) +
+  facet_wrap( ~ depth) +
+  theme_my() +
+  theme(legend.position = "none")
 
 print(min(taxa_sums(Wdbase)))
+ggsave("images/WnA_Base_Shannon.png", arrangeGrob(W_Base_Shannon, A_Base_Shannon), units = "cm", height = 18, width = 8)
+group <- A_Base_Shannon$data %>%
+  dplyr::group_by(soil_type, depth) %>%
+  summarise(mshan = mean(Shannon), mobs = mean(Observed), msimp = mean(Simpson))
+group
 ```
 ```{r}
+rarecurve(t(otu_table(Wdbase)), step = , cex = 0.5)
 # Simpson diversity
 # WORLE
-sample_data(Wdbase) %>%
+W_Base_Simpson <- sample_data(Wdbase) %>%
   lapply(., factor) %>%
   as_tibble() %>%
   cbind(., estimate_richness(Wdbase, )) %>%
-  ggboxplot(x = "soil_type", y = "Simpson", add = "jitter", notch = F, color = "soil_type") + 
-  stat_compare_means() +
-  theme(legend.position = "none") +
-  ggtitle("Simpson diversity index of WORLE baseline detph 1 soils") +
+  ggboxplot(x = "soil_type", y = "Simpson", add = "jitter", notch = F, color = "soil_type", size = .2) + 
+  stat_compare_means(size = 2) +
+  ggtitle("Simpson diversity index of WOR baseline soils faceted by depth") +
   ylab("Simpson Diversity") +
   scale_color_viridis_d() +
-  scale_x_discrete(name = "Soil type", labels = c("crop" = "Ag soil", "strip" = "Prairie strip soil"))
+  scale_x_discrete(name = "Soil type", labels = c("crop" = "Ag soil", "strip" = "Prairie strip soil")) +
+  facet_wrap( ~ depth) +
+  theme_my() +
+  theme(legend.position = "none")
 
+print(min(taxa_sums(Wdbase)))
 
 # Armstrong
-sample_data(Adbase) %>%
+A_Base_Simpson <- sample_data(Adbase) %>%
   lapply(., factor) %>%
   as_tibble() %>%
   cbind(., estimate_richness(Adbase, )) %>%
-  ggboxplot(x = "soil_type", y = "Simpson", add = "jitter", notch = F, color = "soil_type") + 
-  stat_compare_means() +
-  theme(legend.position = "none") +
-  ggtitle("Simpson diversity index of Armstrong baseline detph 1 soils") +
+  ggboxplot(x = "soil_type", y = "Simpson", add = "jitter", notch = F, color = "soil_type", size = .2) + 
+  stat_compare_means(size = 2) +
+  ggtitle("Simpson diversity index of ARM baseline soils faceted by depth") +
   ylab("Simpson Diversity") +
   scale_color_viridis_d() +
-  scale_x_discrete(name = "Soil type", labels = c("crop" = "Ag soil", "strip" = "Prairie strip soil"))
+  scale_x_discrete(name = "Soil type", labels = c("crop" = "Ag soil", "strip" = "Prairie strip soil")) +
+  facet_wrap( ~ depth) +
+  theme_my() +
+  theme(legend.position = "none")
 
-
+print(min(taxa_sums(Wdbase)))
+ggsave("images/WnA_Base_Simpson.png", arrangeGrob(W_Base_Simpson, A_Base_Simpson), units = "cm", height = 18, width = 8)
 ```
 ```{r}
-sample_data(Wdbase) %>%
+W_Base_Observed <- sample_data(Wdbase) %>%
   lapply(., factor) %>%
   as_tibble() %>%
   cbind(., estimate_richness(Wdbase, )) %>%
-  ggboxplot(x = "soil_type", y = "Observed", add = "jitter", notch = F, color = "soil_type") + 
-  stat_compare_means() +
-  theme(legend.position = "none") +
-  ggtitle("Observed diversity of WORLE baseline detph 1 soils") +
+  ggboxplot(x = "soil_type", y = "Observed", add = "jitter", notch = F, color = "soil_type", size = .2) + 
+  stat_compare_means(size = 2) +
+  ggtitle("Observed diversity index of WOR baseline soils faceted by depth") +
   ylab("Observed Diversity") +
   scale_color_viridis_d() +
-  scale_x_discrete(name = "Soil type", labels = c("crop" = "Ag soil", "strip" = "Prairie strip soil"))
+  scale_x_discrete(name = "Soil type", labels = c("crop" = "Ag soil", "strip" = "Prairie strip soil")) +
+  facet_wrap( ~ depth) +
+  theme_my() +
+  theme(legend.position = "none")
 
+print(min(taxa_sums(Wdbase)))
 
 # Armstrong
-sample_data(Adbase) %>%
+A_Base_Observed <- sample_data(Adbase) %>%
   lapply(., factor) %>%
   as_tibble() %>%
   cbind(., estimate_richness(Adbase, )) %>%
-  ggboxplot(x = "soil_type", y = "Observed", add = "jitter", notch = F, color = "soil_type") + 
-  stat_compare_means() +
-  theme(legend.position = "none") +
-  ggtitle("Observed diversity of Armstrong baseline detph 1 soils") +
+  ggboxplot(x = "soil_type", y = "Observed", add = "jitter", notch = F, color = "soil_type", size = .2) + 
+  stat_compare_means(size = 2) +
+  ggtitle("Observed diversity index of ARM baseline soils faceted by depth") +
   ylab("Observed Diversity") +
   scale_color_viridis_d() +
-  scale_x_discrete(name = "Soil type", labels = c("crop" = "Ag soil", "strip" = "Prairie strip soil"))
+  scale_x_discrete(name = "Soil type", labels = c("crop" = "Ag soil", "strip" = "Prairie strip soil")) +
+  facet_wrap( ~ depth) +
+  theme_my() +
+  theme(legend.position = "none")
+
+print(min(taxa_sums(Wdbase)))
+ggsave("images/WnA_Base_Observed.png", arrangeGrob(W_Base_Observed, A_Base_Observed), units = "cm", height = 18, width = 8)
 ```
 # Across the plot variation
 
@@ -259,31 +431,260 @@ Prior to rainfall simulation, there were no differences in Shannon or Simpson or
 Let's now look at differences by time for each site. 
 
 ```{r Over Time Shannon}
-sample_data <- sample_data(Wd1) %>%
+# Subset to WOR and ARM depth one no manure, exclude the border sample from each plot. 
+Wd1 <- subset_samples(altstrips, experiment %in% "Worle_Rainfall" & treatment %in% "no_manure_strip" & !soil_type %in% "border" & matrix %in% "soil")
+Ad1 <- subset_samples(altstrips, experiment %in% "Armstrong_Rainfall" & treatment %in% "no_manure_strip" & !soil_type %in% "border" & matrix %in% "soil")
+```
+```{r}
+kable(data.frame(sample_data(Wd1))) %>%
+  kable_styling(bootstrap_options = "striped") %>%
+  scroll_box(width = "100%", height = "600px")
+Wsample_data <- sample_data(Wd1) %>%
   lapply(., factor) %>%
   as_tibble() 
 
-richness <- estimate_richness(Wd1) 
+Wrichness <- estimate_richness(Wd1) 
 
-sample_data <- cbind(sample_data, richness)
+Wsample_data <- cbind(Wsample_data, Wrichness)
 
-p <- ggboxplot(sample_data, x = "sample_day", y = "Shannon", color = "soil_type", add = "jitter", notch = F)
-p
-plot <- p + stat_compare_means(aes(group = soil_type), label = "p.signif") +
-  ggtitle("Shannon diversity index of WORLE detph 1 soils") +
+wp <- ggboxplot(Wsample_data, x = "sample_day", y = "Shannon", color = "soil_type", add = "jitter", notch = F) +
+  facet_wrap( ~ depth) +
+  theme_my() +
+  theme(legend.position = "none")
+
+wplot <- wp + stat_compare_means(aes(group = soil_type), label = "p.signif") +
+  ggtitle("Shannon diversity index of WOR soils") +
   ylab("Shannon Diversity") +
   xlab("Sampling Day") + scale_color_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
-plot
-ggsave("images/WorleD1Shannon.png", plot = plot, device = "png", width = 6, height = 4, units = "in")
+wplot
+ggsave("images/WorleD1Shannon.png", plot = wplot, device = "png", width = 6, height = 4, units = "in")
+
+wp <- ggboxplot(Wsample_data, x = "sample_day", y = "Observed", color = "soil_type", add = "jitter", notch = F) +
+  facet_wrap( ~ depth) +
+  theme_my() +
+  theme(legend.position = "none")
+
+wplot <- wp + stat_compare_means(aes(group = soil_type), label = "p.signif") +
+  ggtitle("Observed diversity index of WOR soils") +
+  ylab("Observed Diversity") +
+  xlab("Sampling Day") + scale_color_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
+wplot
+ggsave("images/WorleD1Observed.png", plot = wplot, device = "png", width = 6, height = 4, units = "in")
+
+wp <- ggboxplot(Wsample_data, x = "sample_day", y = "Simpson", color = "soil_type", add = "jitter", notch = F) +
+  facet_wrap( ~ depth) +
+  theme_my() +
+  theme(legend.position = "none")
+
+wplot <- wp + stat_compare_means(aes(group = soil_type), label = "p.signif") +
+  ggtitle("Simpson diversity index of WOR soils") +
+  ylab("Simpson Diversity") +
+  xlab("Sampling Day") + scale_color_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
+wplot
+ggsave("images/WorleD1Simpson.png", plot = wplot, device = "png", width = 6, height = 4, units = "in")
+```
+```{r}
+kable(data.frame(sample_data(Ad1))) %>%
+  kable_styling(bootstrap_options = "striped") %>%
+  scroll_box(width = "100%", height = "600px")
+Asample_data <- sample_data(Ad1) %>%
+  lapply(., factor) %>%
+  as_tibble() 
+
+Arichness <- estimate_richness(Ad1) 
+
+Asample_data <- cbind(Asample_data, Arichness)
+
+ap <- ggboxplot(Asample_data, x = "sample_day", y = "Shannon", color = "soil_type", add = "jitter", notch = F) +
+  facet_wrap( ~ depth) +
+  theme_my() +
+  theme(legend.position = "none")
+
+aplot <- ap + stat_compare_means(aes(group = soil_type), label = "p.signif") +
+  ggtitle("Shannon diversity index of ARM soils") +
+  ylab("Shannon Diversity") +
+  xlab("Sampling Day") + scale_color_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
+aplot
+ggsave("images/ARMD1Shannon.png", plot = aplot, device = "png", width = 6, height = 4, units = "in")
+
+ap <- ggboxplot(Asample_data, x = "sample_day", y = "Observed", color = "soil_type", add = "jitter", notch = F) +
+  facet_wrap( ~ depth) +
+  theme_my() +
+  theme(legend.position = "none")
+
+aplot <- ap + stat_compare_means(aes(group = soil_type), label = "p.signif") +
+  ggtitle("Observed diversity index of ARM soils") +
+  ylab("Observed Diversity") +
+  xlab("Sampling Day") + scale_color_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
+aplot
+ggsave("images/ARMD1Observed.png", plot = aplot, device = "png", width = 6, height = 4, units = "in")
+
+ap <- ggboxplot(Asample_data, x = "sample_day", y = "Simpson", color = "soil_type", add = "jitter", notch = F) +
+  facet_wrap( ~ depth) +
+  theme_my() +
+  theme(legend.position = "none")
+
+aplot <- ap + stat_compare_means(aes(group = soil_type), label = "p.signif") +
+  ggtitle("Simpson diversity index of ARM soils") +
+  ylab("Simpson Diversity") +
+  xlab("Sampling Day") + scale_color_viridis_d(name = "Managment", labels = c("Ag", "Prairie"))
+aplot
+ggsave("images/ARMD1Simpson.png", plot = aplot, device = "png", width = 6, height = 4, units = "in")
 ```
 
+
 We see some differences on T002, which was two days after the rainfall simulation. The added moisture likely caused an increase in bacteria. Had we measured microbial biomass carbon, I would have expected to see an increase. We could confirm the increase by using 16s primers and qPCR for these samples. 
+```{r}
+my_comparisons <- list( c("T002", "T014"), c("T002", "T000"), c("Baseline", "T000"), c("T014", "T021"), c("T021", "T042"))
+Sp <- Wsample_data %>%
+  filter(soil_type == "strip") %>%
+  ggboxplot(x = "sample_day", y = "Shannon", add = "jitter") +
+  facet_wrap( ~ depth) +
+  theme_my() +
+  theme(legend.position = "none") + stat_compare_means(comparisons = my_comparisons, label = "p.signif") +
+  ggtitle("Shannon diversity index of WORLE prairie soils") +
+  ylab("Shannon Diversity") +
+  theme(axis.title.x=element_blank())
+Sp
+
+Op <- Wsample_data %>%
+  filter(soil_type == "strip") %>%
+  ggboxplot(x = "sample_day", y = "Observed", add = "jitter") +
+  facet_wrap( ~ depth) +
+  theme_my() +
+  theme(legend.position = "none") + stat_compare_means(comparisons = my_comparisons, label = "p.signif") +
+  ggtitle("Observed diversity index of WORLE prairie soils") +
+  ylab("Observed Diversity") +
+  theme(axis.title.x=element_blank())
+Op
+
+SMp <- Wsample_data %>%
+  filter(soil_type == "strip") %>%
+  ggboxplot(x = "sample_day", y = "Simpson", add = "jitter") +
+  facet_wrap( ~ depth) +
+  theme_my() +
+  theme(legend.position = "none") + stat_compare_means(comparisons = my_comparisons, label = "p.signif") +
+  ggtitle("Simpson diversity index of WORLE prairie soils") +
+  ylab("Simpson Diversity") +
+  xlab("Sampling Day")
+SMp
+ggsave("images/WORoverTimpPraire.png", arrangeGrob(Op, Sp, SMp), units = "cm", height = 25, width = 10)
+```
+```{r}
+Sp <- Wsample_data %>%
+  filter(soil_type == "crop") %>%
+  ggboxplot(x = "sample_day", y = "Shannon", add = "jitter") +
+  facet_wrap( ~ depth) +
+  theme_my() +
+  theme(legend.position = "none") + stat_compare_means(comparisons = my_comparisons, label = "p.signif") +
+  ggtitle("Shannon diversity index of WORLE crop soils") +
+  ylab("Shannon Diversity") +
+  theme(axis.title.x=element_blank())
+Sp
+
+Op <- Wsample_data %>%
+  filter(soil_type == "strip") %>%
+  ggboxplot(x = "sample_day", y = "Observed", add = "jitter") +
+  facet_wrap( ~ depth) +
+  theme_my() +
+  theme(legend.position = "none") + stat_compare_means(comparisons = my_comparisons, label = "p.signif") +
+  ggtitle("Observed diversity index of WORLE crop soils") +
+  ylab("Observed Diversity") +
+  theme(axis.title.x=element_blank())
+Op
+
+SMp <- Wsample_data %>%
+  filter(soil_type == "strip") %>%
+  ggboxplot(x = "sample_day", y = "Simpson", add = "jitter") +
+  facet_wrap( ~ depth) +
+  theme_my() +
+  theme(legend.position = "none") + stat_compare_means(comparisons = my_comparisons, label = "p.signif") +
+  ggtitle("Simpson diversity index of WORLE crop soils") +
+  ylab("Simpson Diversity") +
+  xlab("Sampling Day")
+SMp
+ggsave("images/WORoverTimpCrop.png", arrangeGrob(Op, Sp, SMp), units = "cm", height = 25, width = 10)
+```
+```{r}
+my_comparisons <- list( c("T002", "T014"), c("T002", "T000"), c("Baseline", "T000"), c("T014", "T153"))
+Sp <- Asample_data %>%
+  filter(soil_type == "strip") %>%
+  ggboxplot(x = "sample_day", y = "Shannon", add = "jitter") +
+  facet_wrap( ~ depth) +
+  theme_my() +
+  theme(legend.position = "none") + stat_compare_means(comparisons = my_comparisons, label = "p.signif") +
+  ggtitle("Shannon diversity index of ARM prairie soils") +
+  ylab("Shannon Diversity") +
+  theme(axis.title.x=element_blank())
+Sp
+
+Op <- Asample_data %>%
+  filter(soil_type == "strip") %>%
+  ggboxplot(x = "sample_day", y = "Observed", add = "jitter") +
+  facet_wrap( ~ depth) +
+  theme_my() +
+  theme(legend.position = "none") + stat_compare_means(comparisons = my_comparisons, label = "p.signif") +
+  ggtitle("Observed diversity index of ARM prairie soils") +
+  ylab("Observed Diversity") +
+  theme(axis.title.x=element_blank())
+Op
+
+SMp <- Asample_data %>%
+  filter(soil_type == "strip") %>%
+  ggboxplot(x = "sample_day", y = "Simpson", add = "jitter") +
+  facet_wrap( ~ depth) +
+  theme_my() +
+  theme(legend.position = "none") + stat_compare_means(comparisons = my_comparisons, label = "p.signif") +
+  ggtitle("Simpson diversity index of ARM prairie soils") +
+  ylab("Simpson Diversity") +
+  xlab("Sampling Day")
+SMp
+ggsave("images/ARMoverTimpPraire.png", arrangeGrob(Op, Sp, SMp), units = "cm", height = 25, width = 10)
+```
+```{r}
+Sp <- Asample_data %>%
+  filter(soil_type == "crop") %>%
+  ggboxplot(x = "sample_day", y = "Shannon", add = "jitter") +
+  facet_wrap( ~ depth) +
+  theme_my() +
+  theme(legend.position = "none") + stat_compare_means(comparisons = my_comparisons, label = "p.signif") +
+  ggtitle("Shannon diversity index of ARM crop soils") +
+  ylab("Shannon Diversity") +
+  theme(axis.title.x=element_blank())
+Sp
+
+Op <- Asample_data %>%
+  filter(soil_type == "strip") %>%
+  ggboxplot(x = "sample_day", y = "Observed", add = "jitter") +
+  facet_wrap( ~ depth) +
+  theme_my() +
+  theme(legend.position = "none") + stat_compare_means(comparisons = my_comparisons, label = "p.signif") +
+  ggtitle("Observed diversity index of ARM crop soils") +
+  ylab("Observed Diversity") +
+  theme(axis.title.x=element_blank())
+Op
+
+SMp <- Asample_data %>%
+  filter(soil_type == "strip") %>%
+  ggboxplot(x = "sample_day", y = "Simpson", add = "jitter") +
+  facet_wrap( ~ depth) +
+  theme_my() +
+  theme(legend.position = "none") + stat_compare_means(comparisons = my_comparisons, label = "p.signif") +
+  ggtitle("Simpson diversity index of ARM crop soils") +
+  ylab("Simpson Diversity") +
+  xlab("Sampling Day")
+SMp
+ggsave("images/ARMoverTimecrop.png", arrangeGrob(Op, Sp, SMp), units = "cm", height = 25, width = 10)
+```
+
 
 ```{r Simpson}
-p <- ggboxplot(sample_data, x = "sample_day", y = "Simpson", color = "soil_type", add = "jitter")
-
+p <- ggboxplot(Wsample_data, x = "sample_day", y = "Simpson", color = "soil_type", add = "jitter", notch = F) +
+  facet_wrap( ~ depth) +
+  theme_my() +
+  theme(legend.position = "none")
 plot <- p + stat_compare_means(aes(group = soil_type), label = "p.signif") +
-  ggtitle("Simpson diversity index of WORLE detph 1 soils") +
+  ggtitle("Simpson diversity index of WOR detph 1 soils") +
   ylab("Simpson Diversity") +
   xlab("Sampling Day") + scale_color_viridis_d()
 plot
